@@ -7,199 +7,255 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Noto+Sans+JP:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <style>
+  /* 全体のフォントとダークベース設定 */
   body {
     font-family: 'Noto Sans JP', 'Inter', sans-serif;
     background-color: #0b1120;
     color: #f8fafc;
+    overflow-x: hidden;
   }
+  /* 背番号・カウンター用の等幅数字フォント */
   .font-num {
     font-family: 'Inter', 'Noto Sans JP', sans-serif;
     font-variant-numeric: tabular-nums;
   }
+  /* 鹿島アントラーズらしいエンジ色のヘッダーグラデーション */
+  .antlers-header-grad {
+    background: linear-gradient(90deg, #450a0a 0%, #7f1d1d 48%, #280707 100%);
+  }
+  /* 選手バッジ用のエンジ色グラデーション */
+  .antlers-red {
+    background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%);
+  }
+  /* 芝生ストライプピッチ */
   .soccer-pitch {
     background: repeating-linear-gradient(
       to bottom,
       #1b6332 0px,
-      #1b6332 44px,
-      #207039 44px,
-      #207039 88px
+      #1b6332 42px,
+      #21733b 42px,
+      #21733b 84px
     );
-    box-shadow: inset 0 0 36px rgba(0, 0, 0, 0.35);
+    box-shadow: inset 0 0 36px rgba(0, 0, 0, 0.38);
+    touch-action: manipulation;
   }
   .pitch-line {
     border-color: rgba(255, 255, 255, 0.72);
-  }
-  .antlers-red {
-    background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%);
-  }
-  .antlers-gold-border {
-    border-color: #d4af37;
   }
 </style>
 </head>
 <body class="min-h-screen pb-16">
 
-  <!-- ヘッダー -->
-  <header class="bg-slate-900/95 border-b border-slate-800 sticky top-0 z-30 backdrop-blur">
-    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2">
-      <div class="flex items-center gap-2.5">
-        <span class="w-3 h-7 rounded-sm bg-red-700 border border-amber-400/70 inline-block"></span>
-        <div>
-          <h1 class="text-base sm:text-lg font-black tracking-tight text-white">鹿島アントラーズ スタメン予想メーカー</h1>
-          <p class="text-[11px] text-slate-400">Created by @syou0120</p>
+  <!-- エンジ色ヘッダー帯 -->
+  <header class="antlers-header-grad border-b border-red-900/80 sticky top-0 z-30 shadow-md">
+    <div class="max-w-6xl mx-auto px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2 min-w-0">
+        <span class="w-2.5 h-6 rounded-sm bg-red-500 border border-amber-300/80 inline-block shrink-0"></span>
+        <div class="min-w-0">
+          <h1 class="text-sm sm:text-lg font-black tracking-tight text-white truncate">スタメン予想メーカー</h1>
+          <p class="text-[10px] text-amber-200/85 truncate">鹿島アントラーズ · Created by @syou0120</p>
         </div>
       </div>
-      <div class="flex items-center gap-2">
-        <button onclick="resetToDefault()" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
-          初期スタメンに戻す
+
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button type="button" onclick="openInjuredModal()"
+          class="px-2.5 py-1.5 rounded-lg bg-slate-950/85 hover:bg-slate-900 text-rose-200 border border-rose-400/40 text-xs font-black flex items-center gap-1.5 transition">
+          <span>＋ けが人</span>
+          <span id="header-injured-count" class="px-1.5 py-0.2 rounded-full bg-rose-600 text-white font-num text-[10px]">0</span>
+        </button>
+        <button type="button" onclick="scrollToRoster()"
+          class="px-2.5 py-1.5 rounded-lg bg-slate-900/90 hover:bg-slate-800 text-amber-200 border border-amber-400/40 text-xs font-black transition">
+          選手選択
         </button>
       </div>
     </div>
   </header>
 
-  <main class="max-w-6xl mx-auto px-4 pt-5 grid grid-cols-1 lg:grid-cols-12 gap-6">
+  <!-- 布陣切替 ＋ リセット行 -->
+  <div class="bg-slate-900/95 border-b border-slate-800">
+    <div class="max-w-6xl mx-auto px-3 sm:px-4 py-2 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-1.5 overflow-x-auto py-0.5">
+        <span class="text-xs font-bold text-slate-400 mr-0.5 shrink-0">布陣:</span>
+        <button type="button" data-form="4-4-2" onclick="changeFormation('4-4-2')" class="form-btn px-2.5 py-1 rounded-lg text-xs font-black border shrink-0 transition">4-4-2</button>
+        <button type="button" data-form="4-2-3-1" onclick="changeFormation('4-2-3-1')" class="form-btn px-2.5 py-1 rounded-lg text-xs font-black border shrink-0 transition">4-2-3-1</button>
+        <button type="button" data-form="4-3-3" onclick="changeFormation('4-3-3')" class="form-btn px-2.5 py-1 rounded-lg text-xs font-black border shrink-0 transition">4-3-3</button>
+        <button type="button" data-form="3-4-2-1" onclick="changeFormation('3-4-2-1')" class="form-btn px-2.5 py-1 rounded-lg text-xs font-black border shrink-0 transition">3-4-2-1</button>
+      </div>
+      <button type="button" onclick="resetToDefault()"
+        class="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold shrink-0 transition">
+        リセット
+      </button>
+    </div>
+  </div>
 
-    <!-- 左側：ピッチ＆アクション -->
-    <section class="lg:col-span-7 space-y-4">
+  <main class="max-w-6xl mx-auto px-3 sm:px-4 pt-3.5 grid grid-cols-1 lg:grid-cols-12 gap-5">
 
-      <!-- 試合情報＆フォーメーション -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block text-[11px] font-bold text-slate-400 mb-1">見出し・試合タイトル</label>
+    <!-- 左側（スマホではメインカラム）：試合カード・ピッチ・ベンチ・共有・履歴 -->
+    <section class="lg:col-span-7 space-y-3.5 min-w-0">
+
+      <!-- 試合タイトル＆メモ ＋ STARTING XI カード -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0 flex-1">
             <input id="match-title" type="text" value="明治安田J1リーグ 予想スタメン" oninput="updateMeta()"
-              class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm font-bold text-white focus:outline-none focus:border-amber-400">
+              aria-label="試合タイトル"
+              class="w-full bg-transparent text-sm sm:text-base font-black text-white focus:outline-none focus:underline decoration-amber-400">
+            <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+              <span id="current-formation-badge" class="px-2 py-0.5 rounded bg-red-800 border border-amber-400/60 text-[11px] font-num font-black text-white">4-4-2</span>
+              <input id="match-memo" type="text" value="勝利あるのみ！#antlers" oninput="updateMeta()"
+                aria-label="ひとことメモ"
+                class="flex-1 min-w-[150px] bg-transparent text-xs font-bold text-amber-300 focus:outline-none focus:underline decoration-amber-300">
+            </div>
           </div>
-          <div>
-            <label class="block text-[11px] font-bold text-slate-400 mb-1">ひとことメモ（任意）</label>
-            <input id="match-memo" type="text" value="ホームで勝点3を！" oninput="updateMeta()"
-              class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm font-bold text-amber-200 focus:outline-none focus:border-amber-400">
-          </div>
-        </div>
-
-        <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
-          <div class="flex items-center gap-1.5 flex-wrap">
-            <span class="text-xs font-bold text-slate-400 mr-1">布陣:</span>
-            <button data-form="4-4-2" onclick="changeFormation('4-4-2')" class="form-btn px-3 py-1 rounded-lg text-xs font-black border transition">4-4-2</button>
-            <button data-form="4-2-3-1" onclick="changeFormation('4-2-3-1')" class="form-btn px-3 py-1 rounded-lg text-xs font-black border transition">4-2-3-1</button>
-            <button data-form="4-3-3" onclick="changeFormation('4-3-3')" class="form-btn px-3 py-1 rounded-lg text-xs font-black border transition">4-3-3</button>
-            <button data-form="3-4-2-1" onclick="changeFormation('3-4-2-1')" class="form-btn px-3 py-1 rounded-lg text-xs font-black border transition">3-4-2-1</button>
-          </div>
-          <div class="text-xs font-bold text-slate-300">
-            STARTING XI: <span id="xi-count" class="text-amber-400 font-num text-sm font-black">11 / 11</span>
+          <div class="text-right shrink-0">
+            <div class="text-[10px] font-bold tracking-wider text-slate-400">STARTING XI</div>
+            <div id="xi-count" class="text-base sm:text-lg font-num font-black text-amber-400 leading-tight">11 / 11</div>
           </div>
         </div>
       </div>
 
-      <!-- サッカーピッチ -->
-      <div class="soccer-pitch relative w-full aspect-[4/4.7] rounded-2xl border-2 border-white/75 overflow-hidden select-none">
+      <!-- 2タップ入替ステータスバー（入替元選択時のみ強調表示） -->
+      <div id="swap-status-bar" class="hidden bg-emerald-950/80 border border-emerald-400/60 rounded-xl px-3 py-2 flex items-center justify-between gap-2 text-xs">
+        <span id="swap-status-text" class="text-emerald-200 font-black truncate"></span>
+        <button type="button" onclick="cancelSwapSelection()"
+          class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white border border-slate-700 text-[11px] font-bold shrink-0">
+          解除
+        </button>
+      </div>
+
+      <!-- サッカーピッチ（高さ保証付き） -->
+      <div class="soccer-pitch relative w-full min-h-[430px] sm:min-h-[520px] aspect-[4/4.85] rounded-2xl border-2 border-white/75 overflow-hidden select-none">
         <!-- ピッチライン -->
         <div class="absolute inset-3 border-2 pitch-line pointer-events-none">
-          <!-- ハーフウェーライン -->
           <div class="absolute top-1/2 left-0 right-0 h-0.5 bg-white/70 -translate-y-1/2"></div>
-          <!-- センターサークル -->
           <div class="absolute top-1/2 left-1/2 w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 pitch-line -translate-x-1/2 -translate-y-1/2"></div>
           <div class="absolute top-1/2 left-1/2 w-2 h-2 rounded-full bg-white/80 -translate-x-1/2 -translate-y-1/2"></div>
-          <!-- 上ペナルティエリア -->
           <div class="absolute top-0 left-1/2 w-[54%] h-[15.5%] border-b-2 border-x-2 pitch-line -translate-x-1/2">
             <div class="absolute top-0 left-1/2 w-[52%] h-[38%] border-b-2 border-x-2 pitch-line -translate-x-1/2"></div>
           </div>
-          <!-- 下ペナルティエリア -->
           <div class="absolute bottom-0 left-1/2 w-[54%] h-[15.5%] border-t-2 border-x-2 pitch-line -translate-x-1/2">
             <div class="absolute bottom-0 left-1/2 w-[52%] h-[38%] border-t-2 border-x-2 pitch-line -translate-x-1/2"></div>
           </div>
         </div>
 
         <!-- 11人の配置枠 -->
-        <div id="pitch-slots" class="relative w-full h-full z-10"></div>
+        <div id="pitch-slots" class="relative w-full h-full min-h-[430px] sm:min-h-[520px] z-10"></div>
       </div>
 
-      <!-- ベンチメンバー -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-        <div class="flex items-center justify-between mb-3">
+      <!-- スマホ操作ヒント -->
+      <p class="text-[11px] text-slate-400 px-1">
+        ※ ピッチ上の選手をタップしてから別枠をタップで2タップ入替。または枠選択中に下の選手リストからタップ配置できます。
+      </p>
+
+      <!-- ベンチメンバー (SUBS) -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5">
+        <div class="flex items-center justify-between mb-2.5">
           <div class="flex items-center gap-2">
             <span class="w-1.5 h-4 bg-red-600 rounded-full"></span>
-            <h2 class="text-sm font-black text-white">ベンチメンバー (SUBS)</h2>
+            <h2 class="text-xs sm:text-sm font-black text-white">ベンチメンバー (SUBS)</h2>
           </div>
-          <span class="text-[11px] text-slate-400">タップして選手を配置・入替</span>
+          <span class="text-[11px] text-slate-400">タップで選択・入替</span>
         </div>
         <div id="bench-slots" class="grid grid-cols-3 gap-2"></div>
       </div>
 
       <!-- 負傷離脱中リスト -->
-      <div id="injured-section" class="hidden bg-red-950/40 border border-rose-500/40 rounded-2xl p-4">
+      <div id="injured-section" class="hidden bg-red-950/40 border border-rose-500/40 rounded-2xl p-3.5">
         <h3 class="text-xs font-black text-rose-300 mb-2">負傷離脱中 (INJURED) — 先発・ベンチから除外</h3>
-        <div id="injured-list" class="flex flex-wrap gap-2"></div>
+        <div id="injured-list" class="flex flex-wrap gap-1.5"></div>
       </div>
 
-      <!-- 共有・出力ボタン群 -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2.5">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-          <button onclick="generateShareImage()" class="w-full py-3 px-4 rounded-xl font-black text-sm bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-lg transition flex items-center justify-center gap-2">
+      <!-- SNS共有・出力ボタン群 -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button type="button" onclick="generateShareImage()"
+            class="w-full py-3 px-4 rounded-xl font-black text-xs sm:text-sm bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-lg transition flex items-center justify-center gap-1.5">
             <span>SNS共有用の画像を作成・保存</span>
           </button>
-          <button onclick="shareNative()" class="w-full py-3 px-4 rounded-xl font-black text-sm bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg transition flex items-center justify-center gap-2">
+          <button type="button" onclick="shareNative()"
+            class="w-full py-3 px-4 rounded-xl font-black text-xs sm:text-sm bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg transition flex items-center justify-center gap-1.5">
             <span>画像・テキストを共有</span>
           </button>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-          <button onclick="shareToX()" class="w-full py-2.5 px-4 rounded-xl font-black text-xs bg-slate-950 hover:bg-slate-800 text-white border border-slate-700 transition flex items-center justify-center gap-2">
-            <span>Xでポスト（スタメン11人）</span>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="shareToX()"
+            class="w-full py-2.5 px-3 rounded-xl font-black text-xs bg-slate-950 hover:bg-slate-800 text-white border border-slate-700 transition flex items-center justify-center gap-1.5">
+            <span>Xでポスト</span>
           </button>
-          <button onclick="copyLineupText()" class="w-full py-2.5 px-4 rounded-xl font-black text-xs bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 transition flex items-center justify-center gap-2">
+          <button type="button" onclick="copyLineupText()"
+            class="w-full py-2.5 px-3 rounded-xl font-black text-xs bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 transition flex items-center justify-center gap-1.5">
             <span>テキストをコピー</span>
           </button>
         </div>
-        <p class="text-[11px] text-slate-400 text-center">
-          ※ 入力内容やけが人状態はお使いのブラウザに自動保存されます。
-        </p>
       </div>
 
-    </section>
+      <!-- 直近の予想履歴（最大3件） -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="w-1.5 h-4 bg-amber-400 rounded-full"></span>
+            <h2 class="text-xs sm:text-sm font-black text-white">直近の予想履歴（最大3件）</h2>
+          </div>
+          <button type="button" onclick="saveHistorySnapshot('手動保存')"
+            class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-[11px] font-black transition">
+            ＋ 今の予想を保存
+          </button>
+        </div>
+        <div id="history-list" class="space-y-2"></div>
+      </div>
 
-    <!-- 右側：選手ロスター＆けが人管理 -->
-    <aside class="lg:col-span-5 space-y-4">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
-        <div class="flex items-center justify-between">
-          <h2 class="text-sm font-black text-white">選手リスト（全40名）</h2>
-          <span id="selected-target-badge" class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/40">
-            選択中: #1 枠
+      <!-- 選手ロスター＆けが人管理 -->
+      <div id="roster-section" class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-3">
+        <div class="flex items-center justify-between gap-2">
+          <h2 class="text-xs sm:text-sm font-black text-white">選手リスト（全40名）</h2>
+          <span id="selected-target-badge" class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/40 shrink-0">
+            配置先: 先発 1 (GK)
           </span>
         </div>
 
-        <!-- ポジション絞り込み＆検索 -->
-        <div class="flex flex-wrap gap-1.5">
-          <button onclick="setPosFilter('ALL')" data-pos="ALL" class="pos-filter-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition">ALL</button>
-          <button onclick="setPosFilter('GK')" data-pos="GK" class="pos-filter-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition">GK</button>
-          <button onclick="setPosFilter('DF')" data-pos="DF" class="pos-filter-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition">DF</button>
-          <button onclick="setPosFilter('MF')" data-pos="MF" class="pos-filter-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition">MF</button>
-          <button onclick="setPosFilter('FW')" data-pos="FW" class="pos-filter-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition">FW</button>
+        <!-- ポジション絞り込み -->
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <button type="button" onclick="setPosFilter('ALL')" data-pos="ALL" class="pos-filter-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition">ALL</button>
+          <button type="button" onclick="setPosFilter('GK')" data-pos="GK" class="pos-filter-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition">GK</button>
+          <button type="button" onclick="setPosFilter('DF')" data-pos="DF" class="pos-filter-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition">DF</button>
+          <button type="button" onclick="setPosFilter('MF')" data-pos="MF" class="pos-filter-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition">MF</button>
+          <button type="button" onclick="setPosFilter('FW')" data-pos="FW" class="pos-filter-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition">FW</button>
         </div>
 
         <input id="player-search" type="text" placeholder="背番号や選手名で検索..." oninput="renderRoster()"
           class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400">
 
-        <p class="text-[11px] text-slate-400">
-          選手名タップでピッチ/ベンチ枠へ配置。「けが」ボタンで負傷離脱の切替ができます。
-        </p>
+        <div id="roster-list" class="max-h-[520px] overflow-y-auto space-y-1.5 pr-0.5"></div>
+      </div>
 
-        <div id="roster-list" class="max-h-[640px] overflow-y-auto space-y-1.5 pr-1"></div>
+    </section>
+
+    <!-- 右側（PC表示時のクイック概要・操作ガイド） -->
+    <aside class="lg:col-span-5 space-y-4 hidden lg:block min-w-0">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 sticky top-24">
+        <h2 class="text-sm font-black text-white">スマホ＆PC 操作ガイド</h2>
+        <ul class="space-y-2 text-xs text-slate-300 leading-relaxed">
+          <li><span class="text-amber-400 font-black">1. 2タップ入替：</span>ピッチ上の選手をタップして選び、別のピッチ枠やベンチ枠をタップすると位置を入れ替えられます。</li>
+          <li><span class="text-amber-400 font-black">2. 選手配置：</span>枠を選んだ状態で下の「選手リスト」から選手をタップするとその枠に配置されます。</li>
+          <li><span class="text-amber-400 font-black">3. けが人管理：</span>「けが」ボタンで負傷離脱中（INJURED）に切り替えると、先発・ベンチから自動除外されます。</li>
+          <li><span class="text-amber-400 font-black">4. 予想履歴：</span>直近3件まで自動/手動保存でき、いつでもワンタップで呼び出せます。</li>
+        </ul>
       </div>
     </aside>
 
   </main>
 
   <!-- フッター -->
-  <footer class="max-w-6xl mx-auto px-4 mt-10 pt-4 border-t border-slate-800/80 text-center text-xs text-slate-500">
+  <footer class="max-w-6xl mx-auto px-4 mt-8 pt-4 border-t border-slate-800/80 text-center text-xs text-slate-500">
     鹿島アントラーズ スタメン予想メーカー — Created by @syou0120
   </footer>
 
   <!-- 画像プレビューモーダル -->
-  <div id="share-image-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+  <div id="share-image-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-4 space-y-4 max-h-[92vh] overflow-y-auto">
       <div class="flex items-center justify-between">
         <h3 class="text-sm font-black text-white">SNS共有用画像プレビュー</h3>
-        <button onclick="closeShareModal()" class="text-slate-400 hover:text-white text-lg font-bold px-2">✕</button>
+        <button type="button" onclick="closeShareModal()" class="text-slate-400 hover:text-white text-lg font-bold px-2">✕</button>
       </div>
       <div class="rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
         <img id="generated-image-preview" src="" alt="生成されたスタメン画像" class="w-full h-auto block">
@@ -209,19 +265,37 @@
           class="flex-1 py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs text-center transition">
           PNG画像を保存する
         </a>
-        <button onclick="closeShareModal()" class="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition">
+        <button type="button" onclick="closeShareModal()" class="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition">
           閉じる
         </button>
       </div>
     </div>
   </div>
 
+  <!-- けが人クイック管理モーダル -->
+  <div id="injured-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-4 space-y-3 max-h-[85vh] flex flex-col">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-black text-white">けが人（負傷離脱中）の切替</h3>
+        <button type="button" onclick="closeInjuredModal()" class="text-slate-400 hover:text-white text-lg font-bold px-2">✕</button>
+      </div>
+      <p class="text-[11px] text-slate-400">タップで負傷離脱中（INJURED）のオン/オフを切り替えられます。</p>
+      <div id="injured-modal-list" class="overflow-y-auto space-y-1.5 pr-1 flex-1"></div>
+      <button type="button" onclick="closeInjuredModal()" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-black text-xs transition">
+        完了
+      </button>
+    </div>
+  </div>
+
   <!-- トースト通知 -->
-  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 hidden px-4 py-2 rounded-full bg-slate-800 text-white text-xs font-bold border border-amber-400/50 shadow-xl"></div>
+  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 hidden px-4 py-2 rounded-full bg-slate-800 text-white text-xs font-bold border border-amber-400/50 shadow-xl whitespace-nowrap"></div>
 
 <script>
 const STORAGE_KEY = 'kashima_lineup_builder_v1';
+const HISTORY_KEY = 'kashima_lineup_history_v1';
+const MAX_HISTORY = 3;
 
+// 全40選手データ（GK 4名、DF 10名、MF 20名、FW 6名）
 const INITIAL_PLAYERS = [
   { id: 1, number: 1, name: '早川友基', shortName: '早川友基', pos: 'GK', injured: false },
   { id: 21, number: 21, name: '山田大樹', shortName: '山田大樹', pos: 'GK', injured: false },
@@ -270,76 +344,97 @@ const INITIAL_PLAYERS = [
 
 const FORMATIONS = {
   '4-4-2': [
-    { role: 'GK', x: 50, y: 87 },
-    { role: 'LB', x: 16, y: 69 },
-    { role: 'LCB', x: 38, y: 71 },
-    { role: 'RCB', x: 62, y: 71 },
-    { role: 'RB', x: 84, y: 69 },
-    { role: 'LSH', x: 16, y: 44 },
-    { role: 'LCH', x: 38, y: 48 },
-    { role: 'RCH', x: 62, y: 48 },
-    { role: 'RSH', x: 84, y: 44 },
+    { role: 'GK', x: 50, y: 88 },
+    { role: 'LB', x: 16, y: 70 },
+    { role: 'LCB', x: 38, y: 72 },
+    { role: 'RCB', x: 62, y: 72 },
+    { role: 'RB', x: 84, y: 70 },
+    { role: 'LSH', x: 16, y: 45 },
+    { role: 'LCH', x: 38, y: 49 },
+    { role: 'RCH', x: 62, y: 49 },
+    { role: 'RSH', x: 84, y: 45 },
     { role: 'LS', x: 36, y: 20 },
     { role: 'RS', x: 64, y: 20 }
   ],
   '4-2-3-1': [
-    { role: 'GK', x: 50, y: 87 },
-    { role: 'LB', x: 16, y: 70 },
-    { role: 'LCB', x: 38, y: 72 },
-    { role: 'RCB', x: 62, y: 72 },
-    { role: 'RB', x: 84, y: 70 },
-    { role: 'LDM', x: 36, y: 54 },
-    { role: 'RDM', x: 64, y: 54 },
-    { role: 'LOH', x: 20, y: 35 },
-    { role: 'OMF', x: 50, y: 33 },
-    { role: 'ROH', x: 80, y: 35 },
+    { role: 'GK', x: 50, y: 88 },
+    { role: 'LB', x: 16, y: 71 },
+    { role: 'LCB', x: 38, y: 73 },
+    { role: 'RCB', x: 62, y: 73 },
+    { role: 'RB', x: 84, y: 71 },
+    { role: 'LDM', x: 36, y: 55 },
+    { role: 'RDM', x: 64, y: 55 },
+    { role: 'LOH', x: 20, y: 36 },
+    { role: 'OMF', x: 50, y: 34 },
+    { role: 'ROH', x: 80, y: 36 },
     { role: 'ST', x: 50, y: 17 }
   ],
   '4-3-3': [
-    { role: 'GK', x: 50, y: 87 },
-    { role: 'LB', x: 16, y: 70 },
-    { role: 'LCB', x: 38, y: 72 },
-    { role: 'RCB', x: 62, y: 72 },
-    { role: 'RB', x: 84, y: 70 },
-    { role: 'LCM', x: 28, y: 50 },
-    { role: 'CDM', x: 50, y: 55 },
-    { role: 'RCM', x: 72, y: 50 },
+    { role: 'GK', x: 50, y: 88 },
+    { role: 'LB', x: 16, y: 71 },
+    { role: 'LCB', x: 38, y: 73 },
+    { role: 'RCB', x: 62, y: 73 },
+    { role: 'RB', x: 84, y: 71 },
+    { role: 'LCM', x: 28, y: 51 },
+    { role: 'CDM', x: 50, y: 56 },
+    { role: 'RCM', x: 72, y: 51 },
     { role: 'LW', x: 20, y: 24 },
     { role: 'ST', x: 50, y: 18 },
     { role: 'RW', x: 80, y: 24 }
   ],
   '3-4-2-1': [
-    { role: 'GK', x: 50, y: 87 },
-    { role: 'LCB', x: 24, y: 71 },
-    { role: 'CB', x: 50, y: 73 },
-    { role: 'RCB', x: 76, y: 71 },
-    { role: 'LWB', x: 15, y: 47 },
-    { role: 'LCM', x: 38, y: 51 },
-    { role: 'RCM', x: 62, y: 51 },
-    { role: 'RWB', x: 85, y: 47 },
+    { role: 'GK', x: 50, y: 88 },
+    { role: 'LCB', x: 24, y: 72 },
+    { role: 'CB', x: 50, y: 74 },
+    { role: 'RCB', x: 76, y: 72 },
+    { role: 'LWB', x: 15, y: 48 },
+    { role: 'LCM', x: 38, y: 52 },
+    { role: 'RCM', x: 62, y: 52 },
+    { role: 'RWB', x: 85, y: 48 },
     { role: 'LST', x: 35, y: 30 },
     { role: 'RST', x: 65, y: 30 },
     { role: 'ST', x: 50, y: 16 }
   ]
 };
 
-// 既定スタメン（4-4-2）：林晴己の枠を鈴木優磨に変更
+// デフォルト4-4-2スタメン11名＆ベンチ9名
 const DEFAULT_XI_IDS = [1, 7, 5, 55, 23, 17, 8, 6, 27, 40, 9];
 const DEFAULT_BENCH_IDS = [21, 2, 25, 10, 24, 14, 18, 11, 77];
 
 let state = {
   matchTitle: '明治安田J1リーグ 予想スタメン',
-  matchMemo: 'ホームで勝点3を！',
+  matchMemo: '勝利あるのみ！#antlers',
   formation: '4-4-2',
   startingXI: [...DEFAULT_XI_IDS],
   bench: [...DEFAULT_BENCH_IDS],
   players: JSON.parse(JSON.stringify(INITIAL_PLAYERS)),
-  selectedSlot: { type: 'xi', index: 0 }, // { type: 'xi' | 'bench', index: number }
+  selectedSlot: { type: 'xi', index: 0 },
   posFilter: 'ALL'
 };
 
-function getShortName(player) {
-  return player.shortName || player.name;
+// 2タップ入替用の選択元（{ type: 'xi' | 'bench', index: number } | null）
+let swapSource = null;
+
+// 直近3件の予想履歴
+let historyItems = [];
+
+function getShortName(playerOrName) {
+  if (!playerOrName) return '';
+  if (typeof playerOrName === 'string') return playerOrName;
+  return playerOrName.shortName || playerOrName.name || '';
+}
+
+function formatTimestamp(ts) {
+  try {
+    const d = new Date(ts);
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${mm}/${dd} ${hh}:${min}`;
+  } catch (e) {
+    return '';
+  }
 }
 
 function saveState() {
@@ -352,9 +447,7 @@ function saveState() {
       bench: state.bench,
       players: state.players
     }));
-  } catch (e) {
-    console.warn('保存に失敗しました:', e);
-  }
+  } catch (e) {}
 }
 
 function loadState() {
@@ -368,37 +461,144 @@ function loadState() {
     if (Array.isArray(parsed.startingXI) && parsed.startingXI.length === 11) state.startingXI = parsed.startingXI;
     if (Array.isArray(parsed.bench)) state.bench = parsed.bench;
     if (Array.isArray(parsed.players) && parsed.players.length > 0) state.players = parsed.players;
+  } catch (e) {}
+}
+
+function saveHistoryStorage() {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(historyItems.slice(0, MAX_HISTORY)));
+  } catch (e) {}
+}
+
+function loadHistoryStorage() {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if (!raw) {
+      historyItems = [];
+      return;
+    }
+    const parsed = JSON.parse(raw);
+    historyItems = Array.isArray(parsed) ? parsed.slice(0, MAX_HISTORY) : [];
   } catch (e) {
-    console.warn('読み込みに失敗しました:', e);
+    historyItems = [];
   }
 }
 
+function buildLineupSignature(snap) {
+  return JSON.stringify({
+    title: snap.matchTitle || '',
+    memo: snap.matchMemo || '',
+    formation: snap.formation,
+    xi: snap.startingXI,
+    bench: snap.bench
+  });
+}
+
+function saveHistorySnapshot(tag = '保存') {
+  try {
+    const currentTitle = (document.getElementById('match-title')?.value ?? state.matchTitle ?? '予想スタメン').trim() || '予想スタメン';
+    const currentMemo = (document.getElementById('match-memo')?.value ?? state.matchMemo ?? '').trim();
+
+    const snap = {
+      id: Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      savedAt: Date.now(),
+      tag,
+      matchTitle: currentTitle,
+      matchMemo: currentMemo,
+      formation: state.formation,
+      startingXI: [...state.startingXI],
+      bench: [...state.bench]
+    };
+
+    const sig = buildLineupSignature(snap);
+    const dupIdx = historyItems.findIndex(item => buildLineupSignature(item) === sig);
+    if (dupIdx !== -1) {
+      historyItems.splice(dupIdx, 1);
+    }
+
+    historyItems.unshift(snap);
+    if (historyItems.length > MAX_HISTORY) {
+      historyItems = historyItems.slice(0, MAX_HISTORY);
+    }
+
+    saveHistoryStorage();
+    renderHistoryList();
+    if (tag === '手動保存') {
+      showToast('直近の予想履歴（最大3件）に保存しました');
+    }
+  } catch (e) {}
+}
+
+function applyHistorySnapshot(id) {
+  const target = historyItems.find(item => item.id === id);
+  if (!target) return;
+
+  const injuredIds = new Set(state.players.filter(p => p.injured).map(p => p.id));
+  state.matchTitle = target.matchTitle || '明治安田J1リーグ 予想スタメン';
+  state.matchMemo = target.matchMemo || '';
+  state.formation = FORMATIONS[target.formation] ? target.formation : '4-4-2';
+
+  state.startingXI = (Array.isArray(target.startingXI) ? target.startingXI : Array(11).fill(null))
+    .slice(0, 11)
+    .map(pid => (pid && injuredIds.has(pid) ? null : pid));
+  while (state.startingXI.length < 11) state.startingXI.push(null);
+
+  state.bench = (Array.isArray(target.bench) ? target.bench : Array(9).fill(null))
+    .slice(0, 9)
+    .map(pid => (pid && injuredIds.has(pid) ? null : pid));
+  while (state.bench.length < 9) state.bench.push(null);
+
+  swapSource = null;
+
+  const titleEl = document.getElementById('match-title');
+  const memoEl = document.getElementById('match-memo');
+  if (titleEl) titleEl.value = state.matchTitle;
+  if (memoEl) memoEl.value = state.matchMemo;
+
+  saveState();
+  renderAll();
+  showToast(`履歴「${state.matchTitle}」を呼び出しました`);
+}
+
+function deleteHistorySnapshot(id) {
+  historyItems = historyItems.filter(item => item.id !== id);
+  saveHistoryStorage();
+  renderHistoryList();
+  showToast('履歴を削除しました');
+}
+
 function resetToDefault() {
+  saveHistorySnapshot('リセット前');
   state.matchTitle = '明治安田J1リーグ 予想スタメン';
-  state.matchMemo = 'ホームで勝点3を！';
+  state.matchMemo = '勝利あるのみ！#antlers';
   state.formation = '4-4-2';
   state.startingXI = [...DEFAULT_XI_IDS];
   state.bench = [...DEFAULT_BENCH_IDS];
   state.players = JSON.parse(JSON.stringify(INITIAL_PLAYERS));
   state.selectedSlot = { type: 'xi', index: 0 };
-  document.getElementById('match-title').value = state.matchTitle;
-  document.getElementById('match-memo').value = state.matchMemo;
+  swapSource = null;
+
+  const titleEl = document.getElementById('match-title');
+  const memoEl = document.getElementById('match-memo');
+  if (titleEl) titleEl.value = state.matchTitle;
+  if (memoEl) memoEl.value = state.matchMemo;
+
   saveState();
   renderAll();
   showToast('初期スタメンに戻しました');
 }
 
 function updateMeta() {
-  state.matchTitle = document.getElementById('match-title').value;
-  state.matchMemo = document.getElementById('match-memo').value;
+  state.matchTitle = document.getElementById('match-title')?.value || '';
+  state.matchMemo = document.getElementById('match-memo')?.value || '';
   saveState();
 }
 
 function changeFormation(form) {
   state.formation = form;
+  swapSource = null;
   saveState();
-  renderFormationButtons();
-  renderPitch();
+  renderAll();
 }
 
 function setPosFilter(pos) {
@@ -407,9 +607,76 @@ function setPosFilter(pos) {
   renderRoster();
 }
 
-function selectSlot(type, index) {
-  state.selectedSlot = { type, index };
+function getSlotPlayerId(slot) {
+  if (!slot) return null;
+  return slot.type === 'xi' ? state.startingXI[slot.index] : state.bench[slot.index];
+}
+
+function setSlotPlayerId(slot, pid) {
+  if (!slot) return;
+  if (slot.type === 'xi') {
+    state.startingXI[slot.index] = pid;
+  } else {
+    state.bench[slot.index] = pid;
+  }
+}
+
+function swapTwoSlots(slotA, slotB) {
+  if (!slotA || !slotB) return;
+  if (slotA.type === slotB.type && slotA.index === slotB.index) return;
+
+  const idA = getSlotPlayerId(slotA);
+  const idB = getSlotPlayerId(slotB);
+  setSlotPlayerId(slotA, idB ?? null);
+  setSlotPlayerId(slotB, idA ?? null);
+
+  state.selectedSlot = { type: slotB.type, index: slotB.index };
+  swapSource = null;
+
+  saveState();
   renderAll();
+  showToast('メンバーを入れ替えました');
+}
+
+function cancelSwapSelection() {
+  swapSource = null;
+  renderAll();
+}
+
+// ピッチ上の枠をタップしたときの2タップ入替ロジック
+function onPitchSlotClick(idx) {
+  const clicked = { type: 'xi', index: idx };
+  state.selectedSlot = clicked;
+
+  if (!swapSource) {
+    // 1回目タップ：入替元として選択
+    swapSource = clicked;
+    renderAll();
+  } else if (swapSource.type === 'xi' && swapSource.index === idx) {
+    // 同じ枠を再タップ：選択解除
+    swapSource = null;
+    renderAll();
+  } else {
+    // 2回目タップ：入替元と入れ替え
+    swapTwoSlots(swapSource, clicked);
+  }
+}
+
+// ベンチ枠をタップしたとき（入替元が選択中なら入れ替え、未選択なら配置先として選択）
+function onBenchSlotClick(idx) {
+  const clicked = { type: 'bench', index: idx };
+  state.selectedSlot = clicked;
+
+  if (swapSource) {
+    if (swapSource.type === 'bench' && swapSource.index === idx) {
+      swapSource = null;
+      renderAll();
+    } else {
+      swapTwoSlots(swapSource, clicked);
+    }
+  } else {
+    renderAll();
+  }
 }
 
 function assignPlayerToSelectedSlot(playerId) {
@@ -420,9 +687,8 @@ function assignPlayerToSelectedSlot(playerId) {
     return;
   }
 
+  swapSource = null;
   const { type, index } = state.selectedSlot;
-
-  // すでに他枠にいる場合は入れ替え
   const xiIdx = state.startingXI.indexOf(playerId);
   const benchIdx = state.bench.indexOf(playerId);
 
@@ -456,6 +722,9 @@ function toggleInjured(playerId) {
   if (player.injured) {
     state.startingXI = state.startingXI.map(id => (id === playerId ? null : id));
     state.bench = state.bench.map(id => (id === playerId ? null : id));
+    if (swapSource && getSlotPlayerId(swapSource) === null) {
+      swapSource = null;
+    }
     showToast(`${getShortName(player)} を負傷離脱中に設定しました`);
   } else {
     showToast(`${getShortName(player)} のけが状態を解除しました`);
@@ -465,10 +734,57 @@ function toggleInjured(playerId) {
   renderAll();
 }
 
+function scrollToRoster() {
+  const el = document.getElementById('roster-section');
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function openInjuredModal() {
+  renderInjuredModalList();
+  const modal = document.getElementById('injured-modal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+}
+
+function closeInjuredModal() {
+  const modal = document.getElementById('injured-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+}
+
+function renderInjuredModalList() {
+  const list = document.getElementById('injured-modal-list');
+  if (!list) return;
+  list.innerHTML = state.players.map(p => `
+    <button type="button" onclick="toggleInjured(${p.id}); renderInjuredModalList();"
+      class="w-full flex items-center justify-between gap-2 p-2 rounded-xl border text-left transition ${
+        p.injured
+          ? 'bg-rose-950/70 border-rose-500/60 text-rose-200'
+          : 'bg-slate-950 border-slate-800 text-slate-200 hover:border-slate-600'
+      }">
+      <div class="flex items-center gap-2 min-w-0">
+        <span class="w-6 h-6 rounded-md antlers-red text-white font-num text-[11px] font-black flex items-center justify-center shrink-0">${p.number}</span>
+        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 shrink-0">${p.pos}</span>
+        <span class="text-xs font-bold truncate">${p.name}</span>
+      </div>
+      <span class="text-[11px] font-black px-2 py-0.5 rounded shrink-0 ${
+        p.injured ? 'bg-rose-600 text-white' : 'bg-slate-800 text-slate-400'
+      }">${p.injured ? '負傷中' : '出場可'}</span>
+    </button>
+  `).join('');
+}
+
 function renderFormationButtons() {
+  const badge = document.getElementById('current-formation-badge');
+  if (badge) badge.textContent = state.formation;
+
   document.querySelectorAll('.form-btn').forEach(btn => {
     const active = btn.dataset.form === state.formation;
-    btn.className = `form-btn px-3 py-1 rounded-lg text-xs font-black border transition ${
+    btn.className = `form-btn px-2.5 py-1 rounded-lg text-xs font-black border shrink-0 transition ${
       active
         ? 'bg-red-700 text-white border-amber-400 shadow'
         : 'bg-slate-950 text-slate-300 border-slate-700 hover:border-slate-500'
@@ -487,24 +803,51 @@ function renderPosFilterButtons() {
   });
 }
 
+function renderSwapBanner() {
+  const bar = document.getElementById('swap-status-bar');
+  const textEl = document.getElementById('swap-status-text');
+  if (!bar || !textEl) return;
+
+  if (!swapSource) {
+    bar.classList.add('hidden');
+    return;
+  }
+
+  bar.classList.remove('hidden');
+  const coords = FORMATIONS[state.formation] || FORMATIONS['4-4-2'];
+  const pid = getSlotPlayerId(swapSource);
+  const p = state.players.find(item => item.id === pid);
+  const roleLabel = swapSource.type === 'xi' ? (coords[swapSource.index]?.role || '') : `SUB${swapSource.index + 1}`;
+  const who = p ? `#${p.number} ${getShortName(p)}` : '空き枠';
+  textEl.textContent = `入替元: ${who} (${roleLabel}) → 入れ替え先の枠をタップしてください`;
+}
+
 function renderPitch() {
   const container = document.getElementById('pitch-slots');
+  if (!container) return;
   const coords = FORMATIONS[state.formation] || FORMATIONS['4-4-2'];
   container.innerHTML = '';
 
   coords.forEach((pos, idx) => {
     const player = state.players.find(p => p.id === state.startingXI[idx]);
     const isSelected = state.selectedSlot.type === 'xi' && state.selectedSlot.index === idx;
+    const isSwapSrc = swapSource && swapSource.type === 'xi' && swapSource.index === idx;
     const isGK = pos.role === 'GK';
 
     const el = document.createElement('button');
     el.type = 'button';
-    el.onclick = () => selectSlot('xi', idx);
+    el.onclick = () => onPitchSlotClick(idx);
     el.style.left = `${pos.x}%`;
     el.style.top = `${pos.y}%`;
-    el.className = `absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group focus:outline-none ${
-      isSelected ? 'z-20 scale-105' : 'z-10'
+    el.className = `absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group focus:outline-none transition ${
+      isSwapSrc || isSelected ? 'z-20 scale-105' : 'z-10'
     }`;
+
+    const ringClass = isSwapSrc
+      ? 'ring-4 ring-emerald-300 scale-105'
+      : isSelected
+        ? 'ring-4 ring-amber-300/80'
+        : '';
 
     if (player) {
       el.innerHTML = `
@@ -512,19 +855,19 @@ function renderPitch() {
           isGK
             ? 'bg-amber-600 border-white text-slate-950'
             : 'antlers-red border-amber-400 text-white'
-        } ${isSelected ? 'ring-4 ring-amber-300/80' : ''}">
+        } ${ringClass}">
           <span class="text-[8px] font-black leading-none ${isGK ? 'text-amber-950' : 'text-amber-200'}">${pos.role}</span>
           <span class="font-num text-sm sm:text-base font-black leading-tight">${player.number}</span>
         </div>
-        <span class="mt-1 px-2 py-0.5 rounded bg-slate-950/95 border border-amber-400/75 text-[10px] sm:text-[11px] font-black text-white shadow whitespace-nowrap">
+        <span class="mt-1 px-2 py-0.5 rounded bg-slate-950/95 border ${
+          isSwapSrc ? 'border-emerald-300 text-emerald-200' : 'border-amber-400/75 text-white'
+        } text-[10px] sm:text-[11px] font-black shadow whitespace-nowrap">
           ${getShortName(player)}
         </span>
       `;
     } else {
       el.innerHTML = `
-        <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center bg-slate-950/75 border-2 border-dashed border-white/70 text-[10px] font-black text-white/90 ${
-          isSelected ? 'ring-4 ring-amber-300/80 border-amber-300' : ''
-        }">
+        <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center bg-slate-950/75 border-2 border-dashed border-white/70 text-[10px] font-black text-white/90 ${ringClass}">
           ${pos.role}
         </div>
         <span class="mt-1 px-1.5 py-0.5 rounded bg-slate-950/80 text-[10px] font-bold text-slate-300">未選択</span>
@@ -534,25 +877,30 @@ function renderPitch() {
   });
 
   const count = state.startingXI.filter(Boolean).length;
-  document.getElementById('xi-count').textContent = `${count} / 11`;
+  const countEl = document.getElementById('xi-count');
+  if (countEl) countEl.textContent = `${count} / 11`;
 }
 
 function renderBench() {
   const container = document.getElementById('bench-slots');
+  if (!container) return;
   container.innerHTML = '';
 
   for (let i = 0; i < 9; i++) {
     const pid = state.bench[i];
     const player = state.players.find(p => p.id === pid);
     const isSelected = state.selectedSlot.type === 'bench' && state.selectedSlot.index === i;
+    const isSwapSrc = swapSource && swapSource.type === 'bench' && swapSource.index === i;
 
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.onclick = () => selectSlot('bench', i);
+    btn.onclick = () => onBenchSlotClick(i);
     btn.className = `p-2 rounded-xl border text-left flex items-center gap-2 transition ${
-      isSelected
-        ? 'bg-slate-800 border-amber-400 ring-2 ring-amber-400/50'
-        : 'bg-slate-950/80 border-slate-800 hover:border-slate-600'
+      isSwapSrc
+        ? 'bg-emerald-950/80 border-emerald-300 ring-2 ring-emerald-300/60'
+        : isSelected
+          ? 'bg-slate-800 border-amber-400 ring-2 ring-amber-400/50'
+          : 'bg-slate-950/80 border-slate-800 hover:border-slate-600'
     }`;
 
     if (player) {
@@ -572,8 +920,12 @@ function renderBench() {
 
 function renderInjuredList() {
   const injuredPlayers = state.players.filter(p => p.injured);
+  const headerBadge = document.getElementById('header-injured-count');
+  if (headerBadge) headerBadge.textContent = String(injuredPlayers.length);
+
   const section = document.getElementById('injured-section');
   const list = document.getElementById('injured-list');
+  if (!section || !list) return;
 
   if (injuredPlayers.length === 0) {
     section.classList.add('hidden');
@@ -584,26 +936,28 @@ function renderInjuredList() {
   section.classList.remove('hidden');
   list.innerHTML = injuredPlayers.map(p => `
     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-950/80 border border-rose-500/50 text-xs font-bold text-rose-200">
-      <span class="font-num">#${p.number}</span> ${getShortName(p.name)}
-      <button onclick="toggleInjured(${p.id})" class="text-[10px] underline text-rose-300 hover:text-white ml-1">解除</button>
+      <span class="font-num">#${p.number}</span> ${getShortName(p)}
+      <button type="button" onclick="toggleInjured(${p.id})" class="text-[10px] underline text-rose-300 hover:text-white ml-1">解除</button>
     </span>
   `).join('');
 }
 
 function renderSelectedTargetBadge() {
   const badge = document.getElementById('selected-target-badge');
+  if (!badge) return;
   const { type, index } = state.selectedSlot;
   if (type === 'xi') {
     const role = (FORMATIONS[state.formation] || FORMATIONS['4-4-2'])[index]?.role || '';
-    badge.textContent = `選択中: 先発 ${index + 1} (${role})`;
+    badge.textContent = `配置先: 先発 ${index + 1} (${role})`;
   } else {
-    badge.textContent = `選択中: ベンチ ${index + 1}`;
+    badge.textContent = `配置先: ベンチ ${index + 1}`;
   }
 }
 
 function renderRoster() {
   const list = document.getElementById('roster-list');
-  const q = (document.getElementById('player-search').value || '').trim().toLowerCase();
+  if (!list) return;
+  const q = (document.getElementById('player-search')?.value || '').trim().toLowerCase();
 
   const usedXI = new Set(state.startingXI.filter(Boolean));
   const usedBench = new Set(state.bench.filter(Boolean));
@@ -631,7 +985,7 @@ function renderRoster() {
           ? 'bg-rose-950/25 border-rose-900/50 opacity-70'
           : 'bg-slate-950/80 border-slate-800 hover:border-slate-600'
       }">
-        <button type="button" onclick="assignPlayerToSelectedSlot(${p.id})" class="flex items-center gap-2.5 text-left flex-1 min-w-0">
+        <button type="button" onclick="assignPlayerToSelectedSlot(${p.id})" class="flex items-center gap-2 text-left flex-1 min-w-0">
           <span class="w-7 h-7 rounded-lg antlers-red text-white font-num text-xs font-black flex items-center justify-center shrink-0">${p.number}</span>
           <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 shrink-0">${p.pos}</span>
           <span class="text-xs font-bold text-white truncate">${p.name}</span>
@@ -649,14 +1003,56 @@ function renderRoster() {
   }).join('');
 }
 
+function renderHistoryList() {
+  const list = document.getElementById('history-list');
+  if (!list) return;
+
+  if (!historyItems.length) {
+    list.innerHTML = `<p class="text-xs text-slate-500 py-1.5">履歴はまだありません。「＋ 今の予想を保存」や共有・画像作成時に保存されます。</p>`;
+    return;
+  }
+
+  list.innerHTML = historyItems.slice(0, MAX_HISTORY).map((item, idx) => {
+    const names = (item.startingXI || [])
+      .map(pid => state.players.find(p => p.id === pid))
+      .filter(Boolean)
+      .slice(0, 6)
+      .map(p => `#${p.number}${getShortName(p)}`);
+    const summary = names.length ? names.join('・') + ((item.startingXI || []).filter(Boolean).length > 6 ? ' ほか' : '') : '未選択';
+
+    return `
+      <div class="p-2.5 rounded-xl bg-slate-950/90 border border-slate-800 flex items-center justify-between gap-2">
+        <button type="button" onclick="applyHistorySnapshot('${item.id}')" class="text-left flex-1 min-w-0 group">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-[10px] font-num font-black px-1.5 py-0.5 rounded bg-red-900/70 text-amber-200 border border-amber-400/40">${item.formation}</span>
+            <span class="text-xs font-black text-white group-hover:text-amber-300 truncate">${item.matchTitle || '予想スタメン'}</span>
+            <span class="text-[10px] font-num text-slate-400">${formatTimestamp(item.savedAt)}</span>
+          </div>
+          <p class="text-[11px] text-slate-400 truncate mt-0.5">${summary}</p>
+        </button>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button type="button" onclick="applyHistorySnapshot('${item.id}')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-amber-300 border border-slate-700 text-[11px] font-black transition">
+            呼出
+          </button>
+          <button type="button" onclick="deleteHistorySnapshot('${item.id}')" aria-label="履歴 ${idx + 1} を削除" class="px-2 py-1 rounded-lg bg-slate-900 hover:bg-rose-950 text-slate-500 hover:text-rose-300 border border-slate-800 text-[11px] font-bold transition">
+            ✕
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
 function renderAll() {
-  renderFormationButtons();
-  renderPosFilterButtons();
-  renderSelectedTargetBadge();
-  renderPitch();
-  renderBench();
-  renderInjuredList();
-  renderRoster();
+  try { renderFormationButtons(); } catch (e) {}
+  try { renderPosFilterButtons(); } catch (e) {}
+  try { renderSelectedTargetBadge(); } catch (e) {}
+  try { renderSwapBanner(); } catch (e) {}
+  try { renderPitch(); } catch (e) {}
+  try { renderBench(); } catch (e) {}
+  try { renderInjuredList(); } catch (e) {}
+  try { renderRoster(); } catch (e) {}
+  try { renderHistoryList(); } catch (e) {}
 }
 
 function roundRect(ctx, x, y, w, h, r) {
@@ -670,8 +1066,16 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
+// HTML5 Canvas による高解像度PNG直接描画（Created by @syou0120 クレジット入り）
 async function createLineupCanvas() {
-  await document.fonts.ready;
+  try {
+    if (document.fonts && document.fonts.ready) {
+      await Promise.race([
+        document.fonts.ready,
+        new Promise(resolve => setTimeout(resolve, 1200))
+      ]);
+    }
+  } catch (e) {}
 
   const coords = FORMATIONS[state.formation] || FORMATIONS['4-4-2'];
   const titleText = (document.getElementById('match-title')?.value || '明治安田J1リーグ 予想スタメン').trim();
@@ -711,11 +1115,11 @@ async function createLineupCanvas() {
   const ctx = canvas.getContext('2d');
   ctx.scale(scale, scale);
 
-  // 全体背景
+  // 背景
   ctx.fillStyle = '#0f172a';
   ctx.fillRect(0, 0, width, totalHeight);
 
-  // 試合タイトルカード
+  // 上部ヘッダーカード
   roundRect(ctx, 16, 14, width - 32, 64, 12);
   ctx.fillStyle = '#1e293b';
   ctx.fill();
@@ -752,7 +1156,7 @@ async function createLineupCanvas() {
   ctx.font = '900 14px "Inter", sans-serif';
   ctx.fillText(`${assignedCount} / 11`, width - 28, 52);
 
-  // ピッチ（芝生ストライプ）
+  // ピッチ描画
   ctx.save();
   roundRect(ctx, pitchX, pitchY, pitchW, pitchH, 12);
   ctx.clip();
@@ -802,7 +1206,6 @@ async function createLineupCanvas() {
   ctx.strokeRect(paX, innerY + innerH - paH, paW, paH);
   ctx.strokeRect(midX - gaW / 2, innerY + innerH - gaH, gaW, gaH);
 
-  // 11人の選手ノード
   coords.forEach((pos, idx) => {
     const cx = pitchX + (pos.x / 100) * pitchW;
     const cy = pitchY + (pos.y / 100) * pitchH;
@@ -950,7 +1353,7 @@ async function createLineupCanvas() {
     });
   }
 
-  // 画像内クレジット表記
+  // クレジット表記
   ctx.fillStyle = '#94a3b8';
   ctx.font = '700 10px "Inter", "Noto Sans JP", sans-serif';
   ctx.textAlign = 'right';
@@ -962,6 +1365,7 @@ async function createLineupCanvas() {
 
 async function generateShareImage() {
   saveState();
+  saveHistorySnapshot('画像作成');
   showToast('画像を生成中...');
   try {
     const canvas = await createLineupCanvas();
@@ -984,9 +1388,10 @@ function closeShareModal() {
   modal.classList.remove('flex');
 }
 
-// Xでポスト（サブメンバーを外したスッキリ構成）
+// Xでポスト（サブメンバーを省いたスッキリ構成 + by @syou0120）
 function shareToX() {
   saveState();
+  saveHistorySnapshot('Xポスト');
   const title = (document.getElementById('match-title')?.value || '予想スタメン').trim();
   const memo = (document.getElementById('match-memo')?.value || '').trim();
   const coords = FORMATIONS[state.formation] || FORMATIONS['4-4-2'];
@@ -1008,9 +1413,10 @@ function shareToX() {
   window.open(url, '_blank', 'noopener,noreferrer');
 }
 
-// 汎用共有（スマホ共有シート対応／非対応時は画像モーダルへ）
+// 汎用共有（navigator.share対応環境は画像＋テキスト共有、非対応時は画像モーダル）
 async function shareNative() {
   saveState();
+  saveHistorySnapshot('共有');
   const title = (document.getElementById('match-title')?.value || '予想スタメン').trim();
   const memo = (document.getElementById('match-memo')?.value || '').trim();
   const shareText = `${title}（${state.formation}）${memo ? ' ' + memo : ''} by @syou0120`;
@@ -1081,6 +1487,7 @@ async function copyLineupText() {
 let toastTimer = null;
 function showToast(msg) {
   const el = document.getElementById('toast');
+  if (!el) return;
   el.textContent = msg;
   el.classList.remove('hidden');
   clearTimeout(toastTimer);
@@ -1090,8 +1497,11 @@ function showToast(msg) {
 }
 
 loadState();
-document.getElementById('match-title').value = state.matchTitle;
-document.getElementById('match-memo').value = state.matchMemo;
+loadHistoryStorage();
+const titleInput = document.getElementById('match-title');
+const memoInput = document.getElementById('match-memo');
+if (titleInput) titleInput.value = state.matchTitle;
+if (memoInput) memoInput.value = state.matchMemo;
 renderAll();
 </script>
 </body>
