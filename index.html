@@ -144,7 +144,7 @@
 
       <!-- スマホ操作ヒント -->
       <p class="text-[11px] text-slate-400 px-1">
-        ※ ピッチ上の選手をタップしてから別枠をタップで2タップ入替。または枠選択中に下の選手リストからタップ配置できます。
+        ※ 枠をタップ→別枠をタップで2タップ入替。長押し（約0.5秒）または選択中の枠を再タップで選手選択モーダルを開きます。
       </p>
 
       <!-- ベンチメンバー (SUBS) -->
@@ -287,6 +287,43 @@
     </div>
   </div>
 
+  <!-- 枠指定の選手選択モーダル（長押し／選択中枠再タップで起動） -->
+  <div id="player-picker-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-4 space-y-3 max-h-[88vh] flex flex-col">
+      <div class="flex items-center justify-between gap-2">
+        <div>
+          <h3 class="text-sm font-black text-white">選手を選択</h3>
+          <p id="picker-target-label" class="text-[11px] font-bold text-amber-300"></p>
+        </div>
+        <button type="button" onclick="closePlayerPickerModal()" class="text-slate-400 hover:text-white text-lg font-bold px-2">✕</button>
+      </div>
+
+      <div class="flex items-center gap-1.5 flex-wrap">
+        <button type="button" onclick="setPickerPosFilter('ALL')" data-picker-pos="ALL" class="picker-pos-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition">ALL</button>
+        <button type="button" onclick="setPickerPosFilter('GK')" data-picker-pos="GK" class="picker-pos-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition">GK</button>
+        <button type="button" onclick="setPickerPosFilter('DF')" data-picker-pos="DF" class="picker-pos-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition">DF</button>
+        <button type="button" onclick="setPickerPosFilter('MF')" data-picker-pos="MF" class="picker-pos-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition">MF</button>
+        <button type="button" onclick="setPickerPosFilter('FW')" data-picker-pos="FW" class="picker-pos-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition">FW</button>
+      </div>
+
+      <input id="picker-search" type="text" placeholder="背番号や選手名で検索..." oninput="renderPlayerPickerList()"
+        class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400">
+
+      <div id="player-picker-list" class="overflow-y-auto space-y-1.5 pr-1 flex-1"></div>
+
+      <div class="flex items-center gap-2 pt-1">
+        <button type="button" onclick="clearSelectedSlotPlayer()"
+          class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-rose-950 text-rose-200 border border-slate-700 font-black text-xs transition">
+          この枠を空にする
+        </button>
+        <button type="button" onclick="closePlayerPickerModal()"
+          class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition">
+          閉じる
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- トースト通知 -->
   <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 hidden px-4 py-2 rounded-full bg-slate-800 text-white text-xs font-bold border border-amber-400/50 shadow-xl whitespace-nowrap"></div>
 
@@ -414,6 +451,12 @@ let state = {
 
 // 2タップ入替用の選択元（{ type: 'xi' | 'bench', index: number } | null）
 let swapSource = null;
+
+// 長押し検知＆クリック誤爆防止用
+const LONG_PRESS_MS = 500;
+let longPressTimer = null;
+let longPressTriggered = false;
+let pickerPosFilter = 'ALL';
 
 // 直近3件の予想履歴
 let historyItems = [];
@@ -643,38 +686,197 @@ function cancelSwapSelection() {
   renderAll();
 }
 
-// ピッチ上の枠をタップしたときの2タップ入替ロジック
+function getSlotLabel(slot) {
+  if (!slot) return '';
+  if (slot.type === 'xi') {
+    const role = (FORMATIONS[state.formation] || FORMATIONS['4-4-2'])[slot.index]?.role || '';
+    return `先発 ${slot.index + 1} (${role})`;
+  }
+  return `ベンチ ${slot.index + 1}`;
+}
+
+function openPlayerPickerModal(slot) {
+  if (!slot) return;
+  state.selectedSlot = { type: slot.type, index: slot.index };
+  swapSource = null;
+  pickerPosFilter = 'ALL';
+
+  const searchInput = document.getElementById('picker-search');
+  if (searchInput) searchInput.value = '';
+
+  const labelEl = document.getElementById('picker-target-label');
+  if (labelEl) labelEl.textContent = `対象枠: ${getSlotLabel(state.selectedSlot)}`;
+
+  renderSelectedTargetBadge();
+  renderSwapBanner();
+  renderPickerPosButtons();
+  renderPlayerPickerList();
+
+  const modal = document.getElementById('player-picker-modal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+}
+
+function closePlayerPickerModal() {
+  const modal = document.getElementById('player-picker-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+}
+
+function setPickerPosFilter(pos) {
+  pickerPosFilter = pos;
+  renderPickerPosButtons();
+  renderPlayerPickerList();
+}
+
+function renderPickerPosButtons() {
+  document.querySelectorAll('.picker-pos-btn').forEach(btn => {
+    const active = btn.dataset.pickerPos === pickerPosFilter;
+    btn.className = `picker-pos-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition ${
+      active
+        ? 'bg-amber-500 text-slate-950 border-amber-300'
+        : 'bg-slate-950 text-slate-300 border-slate-700 hover:border-slate-500'
+    }`;
+  });
+}
+
+function renderPlayerPickerList() {
+  const list = document.getElementById('player-picker-list');
+  if (!list) return;
+  const q = (document.getElementById('picker-search')?.value || '').trim().toLowerCase();
+  const usedXI = new Set(state.startingXI.filter(Boolean));
+  const usedBench = new Set(state.bench.filter(Boolean));
+
+  const filtered = state.players.filter(p => {
+    if (pickerPosFilter !== 'ALL' && p.pos !== pickerPosFilter) return false;
+    if (!q) return true;
+    return String(p.number).includes(q) || p.name.toLowerCase().includes(q) || (p.shortName || '').toLowerCase().includes(q);
+  });
+
+  list.innerHTML = filtered.map(p => {
+    const inXI = usedXI.has(p.id);
+    const inBench = usedBench.has(p.id);
+    const statusBadge = p.injured
+      ? `<span class="text-[10px] font-black px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">負傷</span>`
+      : inXI
+        ? `<span class="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/40">先発</span>`
+        : inBench
+          ? `<span class="text-[10px] font-black px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/40">SUB</span>`
+          : '';
+
+    return `
+      <button type="button" ${p.injured ? 'disabled' : ''} onclick="pickPlayerForCurrentSlot(${p.id})"
+        class="w-full flex items-center justify-between gap-2 p-2 rounded-xl border text-left transition ${
+          p.injured
+            ? 'bg-rose-950/25 border-rose-900/50 opacity-55 cursor-not-allowed'
+            : 'bg-slate-950/90 border-slate-800 hover:border-amber-400'
+        }">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="w-7 h-7 rounded-lg antlers-red text-white font-num text-xs font-black flex items-center justify-center shrink-0">${p.number}</span>
+          <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 shrink-0">${p.pos}</span>
+          <span class="text-xs font-bold text-white truncate">${p.name}</span>
+        </div>
+        ${statusBadge}
+      </button>
+    `;
+  }).join('');
+}
+
+function pickPlayerForCurrentSlot(playerId) {
+  assignPlayerToSelectedSlot(playerId);
+  closePlayerPickerModal();
+}
+
+function clearSelectedSlotPlayer() {
+  const { type, index } = state.selectedSlot;
+  setSlotPlayerId({ type, index }, null);
+  swapSource = null;
+  saveState();
+  renderAll();
+  closePlayerPickerModal();
+  showToast(`${getSlotLabel({ type, index })} を空にしました`);
+}
+
+function startLongPress(slot) {
+  clearTimeout(longPressTimer);
+  longPressTriggered = false;
+  longPressTimer = setTimeout(() => {
+    longPressTriggered = true;
+    if (navigator.vibrate) {
+      try { navigator.vibrate(25); } catch (e) {}
+    }
+    openPlayerPickerModal(slot);
+  }, LONG_PRESS_MS);
+}
+
+function cancelLongPress() {
+  clearTimeout(longPressTimer);
+}
+
+function attachSlotPressHandlers(el, slot, onShortTap) {
+  el.addEventListener('touchstart', () => startLongPress(slot), { passive: true });
+  el.addEventListener('touchend', cancelLongPress);
+  el.addEventListener('touchcancel', cancelLongPress);
+  el.addEventListener('touchmove', cancelLongPress, { passive: true });
+
+  el.addEventListener('mousedown', (e) => {
+    if (e.button === 0) startLongPress(slot);
+  });
+  el.addEventListener('mouseup', cancelLongPress);
+  el.addEventListener('mouseleave', cancelLongPress);
+
+  el.addEventListener('click', () => {
+    if (longPressTriggered) {
+      longPressTriggered = false;
+      return;
+    }
+    onShortTap();
+  });
+}
+
+// ピッチ上の枠をタップしたときの短押しロジック（2タップ入替／選択中枠の再タップでモーダル）
 function onPitchSlotClick(idx) {
   const clicked = { type: 'xi', index: idx };
-  state.selectedSlot = clicked;
 
   if (!swapSource) {
-    // 1回目タップ：入替元として選択
+    const alreadySelected = state.selectedSlot.type === 'xi' && state.selectedSlot.index === idx;
+    state.selectedSlot = clicked;
+    if (alreadySelected) {
+      openPlayerPickerModal(clicked);
+      return;
+    }
     swapSource = clicked;
     renderAll();
   } else if (swapSource.type === 'xi' && swapSource.index === idx) {
-    // 同じ枠を再タップ：選択解除
     swapSource = null;
-    renderAll();
+    openPlayerPickerModal(clicked);
   } else {
-    // 2回目タップ：入替元と入れ替え
     swapTwoSlots(swapSource, clicked);
   }
 }
 
-// ベンチ枠をタップしたとき（入替元が選択中なら入れ替え、未選択なら配置先として選択）
+// ベンチ枠をタップしたときの短押しロジック
 function onBenchSlotClick(idx) {
   const clicked = { type: 'bench', index: idx };
-  state.selectedSlot = clicked;
 
   if (swapSource) {
     if (swapSource.type === 'bench' && swapSource.index === idx) {
       swapSource = null;
-      renderAll();
+      openPlayerPickerModal(clicked);
     } else {
       swapTwoSlots(swapSource, clicked);
     }
   } else {
+    const alreadySelected = state.selectedSlot.type === 'bench' && state.selectedSlot.index === idx;
+    state.selectedSlot = clicked;
+    if (alreadySelected) {
+      openPlayerPickerModal(clicked);
+      return;
+    }
     renderAll();
   }
 }
@@ -836,7 +1038,7 @@ function renderPitch() {
 
     const el = document.createElement('button');
     el.type = 'button';
-    el.onclick = () => onPitchSlotClick(idx);
+    attachSlotPressHandlers(el, { type: 'xi', index: idx }, () => onPitchSlotClick(idx));
     el.style.left = `${pos.x}%`;
     el.style.top = `${pos.y}%`;
     el.className = `absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group focus:outline-none transition ${
@@ -894,7 +1096,7 @@ function renderBench() {
 
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.onclick = () => onBenchSlotClick(i);
+    attachSlotPressHandlers(btn, { type: 'bench', index: i }, () => onBenchSlotClick(i));
     btn.className = `p-2 rounded-xl border text-left flex items-center gap-2 transition ${
       isSwapSrc
         ? 'bg-emerald-950/80 border-emerald-300 ring-2 ring-emerald-300/60'
@@ -1053,6 +1255,12 @@ function renderAll() {
   try { renderInjuredList(); } catch (e) {}
   try { renderRoster(); } catch (e) {}
   try { renderHistoryList(); } catch (e) {}
+  try {
+    const pickerModal = document.getElementById('player-picker-modal');
+    if (pickerModal && !pickerModal.classList.contains('hidden')) {
+      renderPlayerPickerList();
+    }
+  } catch (e) {}
 }
 
 function roundRect(ctx, x, y, w, h, r) {
