@@ -873,21 +873,12 @@ async function createLineupCanvas() {
     .map(pid => state.players.find(p => p.id === pid))
     .filter(Boolean);
 
-  const injuredPlayers = state.players.filter(p => p.injured);
-
   const benchRows = Math.max(1, Math.ceil(Math.max(benchPlayers.length, 9) / 3));
   const benchBoxY = pitchY + pitchH + 14;
   const benchBoxH = 44 + benchRows * 38;
 
-  let injuredBoxY = benchBoxY + benchBoxH + 10;
-  let injuredBoxH = 0;
-  if (injuredPlayers.length > 0) {
-    const injRows = Math.max(1, Math.ceil(injuredPlayers.length / 3));
-    injuredBoxH = 38 + injRows * 30;
-  }
-
   const footerSpace = 28;
-  const totalHeight = (injuredPlayers.length > 0 ? injuredBoxY + injuredBoxH : benchBoxY + benchBoxH) + footerSpace + 12;
+  const totalHeight = benchBoxY + benchBoxH + footerSpace + 12;
 
   const canvas = document.createElement('canvas');
   canvas.width = width * scale;
@@ -1101,31 +1092,6 @@ async function createLineupCanvas() {
       ctx.textAlign = 'center';
       ctx.fillText('-', bx + colW / 2, by + 16.5);
     }
-  }
-
-  if (injuredPlayers.length > 0) {
-    roundRect(ctx, 16, injuredBoxY, width - 32, injuredBoxH, 12);
-    ctx.fillStyle = 'rgba(69, 10, 10, 0.45)';
-    ctx.fill();
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = 'rgba(244, 63, 94, 0.45)';
-    ctx.stroke();
-
-    ctx.fillStyle = '#fda4af';
-    ctx.font = '900 11px "Noto Sans JP", "Inter", sans-serif';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('負傷離脱中 (INJURED)', 28, injuredBoxY + 16);
-
-    injuredPlayers.forEach((p, idx) => {
-      const rIdx = Math.floor(idx / 3);
-      const cIdx = idx % 3;
-      const ix = 28 + cIdx * (colW + 6);
-      const iy = injuredBoxY + 30 + rIdx * 30;
-      ctx.fillStyle = '#fecdd3';
-      ctx.font = '700 10.5px "Noto Sans JP", "Inter", sans-serif';
-      ctx.fillText(`#${p.number} ${getShortName(p)}`, ix, iy + 11);
-    });
   }
 
   ctx.fillStyle = '#94a3b8';
