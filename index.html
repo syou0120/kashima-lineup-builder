@@ -54,7 +54,7 @@
       <div class="flex items-center gap-1.5 shrink-0">
         <button type="button" onclick="openPlayerPickerForSelected()"
           class="px-2.5 py-1.5 rounded-lg text-[11px] font-black bg-amber-400 hover:bg-amber-300 text-slate-950 shadow transition">
-          選手を変更
+          選手一覧
         </button>
         <button type="button" onclick="resetToDefault()"
           class="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-slate-950/75 hover:bg-slate-900 text-slate-100 border border-white/20 transition">
@@ -100,7 +100,7 @@
         </div>
       </div>
       <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800/80">
-        <span>別枠タップで入替 ／ 選択中再タップ・長押し・右上で選手選択</span>
+        <span>枠をタップすると選手一覧が開きます</span>
         <button type="button" onclick="openPlayerPickerForSelected()" class="text-amber-300 font-bold underline shrink-0 ml-2">一覧から選ぶ</button>
       </div>
     </div>
@@ -128,7 +128,7 @@
           <span class="w-1.5 h-4 bg-red-600 rounded-full"></span>
           <h2 class="text-xs sm:text-sm font-black text-white">ベンチメンバー (SUBS)</h2>
         </div>
-        <span class="text-[10px] text-slate-400">タップで入替・長押しで変更</span>
+        <span class="text-[10px] text-slate-400">タップで選手一覧を開く</span>
       </div>
       <div id="bench-slots" class="grid grid-cols-3 gap-2"></div>
     </div>
@@ -242,11 +242,10 @@
   <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 hidden px-4 py-2 rounded-full bg-slate-800 text-white text-xs font-bold border border-amber-400/50 shadow-xl whitespace-nowrap"></div>
 
 <script>
-const STORAGE_KEY = 'kashima_lineup_builder_v3';
+const STORAGE_KEY = 'kashima_lineup_builder_v4';
 const HISTORY_KEY = 'kashima_lineup_history_v2';
 const MAX_HISTORY = 3;
 
-// 最新ロスター（GK4 / DF14 / MF11 / FW11 = 計40名、2種登録7名含む）
 const INITIAL_PLAYERS = [
   // GK (4)
   { id: 1, number: 1, name: '早川友基', shortName: '早川友基', pos: 'GK', youth: false, injured: false },
@@ -270,7 +269,7 @@ const INITIAL_PLAYERS = [
   { id: 45, number: 45, name: '倉橋幸輝', shortName: '倉橋幸輝', pos: 'DF', youth: true, injured: false },
   { id: 55, number: 55, name: '植田直通', shortName: '植田直通', pos: 'DF', youth: false, injured: false },
 
-  // MF (11)
+  // MF (10)
   { id: 6, number: 6, name: '三竿健斗', shortName: '三竿健斗', pos: 'MF', youth: false, injured: false },
   { id: 8, number: 8, name: 'マテウス・ブエノ', shortName: 'ブエノ', pos: 'MF', youth: false, injured: false },
   { id: 10, number: 10, name: '柴崎岳', shortName: '柴崎岳', pos: 'MF', youth: false, injured: false },
@@ -282,7 +281,7 @@ const INITIAL_PLAYERS = [
   { id: 44, number: 44, name: '平島大悟', shortName: '平島大悟', pos: 'MF', youth: true, injured: false },
   { id: 46, number: 46, name: '岩土そら', shortName: '岩土そら', pos: 'MF', youth: true, injured: false },
 
-  // FW (11)
+  // FW (10)
   { id: 9, number: 9, name: 'レオ・セアラ', shortName: 'レオ', pos: 'FW', youth: false, injured: false },
   { id: 11, number: 11, name: '田川亨介', shortName: '田川亨介', pos: 'FW', youth: false, injured: false },
   { id: 17, number: 17, name: 'エウベル', shortName: 'エウベル', pos: 'FW', youth: false, injured: false },
@@ -461,143 +460,18 @@ function setPosFilter(pos) {
   renderRoster();
 }
 
-function swapSlots(slotA, slotB) {
-  if (!slotA || !slotB) return;
-  if (slotA.type === slotB.type && slotA.index === slotB.index) return;
-
-  const getVal = s => (s.type === 'xi' ? state.startingXI[s.index] : state.bench[s.index]);
-  const setVal = (s, v) => {
-    if (s.type === 'xi') state.startingXI[s.index] = v;
-    else state.bench[s.index] = v;
-  };
-
-  const valA = getVal(slotA);
-  const valB = getVal(slotB);
-  setVal(slotA, valB ?? null);
-  setVal(slotB, valA ?? null);
-
-  state.selectedSlot = { type: slotB.type, index: slotB.index };
-  saveState();
-  renderAll();
-  showToast('選手を入れ替えました');
-}
-
-function handleSlotTap(type, index) {
-  const clicked = { type, index };
-  const current = state.selectedSlot;
-
-  if (current && current.type === type && current.index === index) {
-    openPlayerPickerForSlot(clicked);
-    return;
-  }
-
-  if (current) {
-    swapSlots(current, clicked);
-  } else {
-    state.selectedSlot = clicked;
-    renderAll();
-  }
-}
-
-function bindSlotGestures(el, type, index) {
-  const LONG_PRESS_MS = 460;
-  const MOVE_TOLERANCE = 14;
-  let timer = null;
-  let startX = 0;
-  let startY = 0;
-  let longPressed = false;
-
-  const clearTimer = () => {
-    if (timer) {
-      clearTimeout(timer);
-      timer = null;
-    }
-  };
-
-  const startPress = (clientX, clientY) => {
-    longPressed = false;
-    startX = clientX;
-    startY = clientY;
-    clearTimer();
-    timer = setTimeout(() => {
-      longPressed = true;
-      state.selectedSlot = { type, index };
-      renderAll();
-      openPlayerPickerForSlot({ type, index });
-    }, LONG_PRESS_MS);
-  };
-
-  const movePress = (clientX, clientY) => {
-    if (!timer) return;
-    if (Math.hypot(clientX - startX, clientY - startY) > MOVE_TOLERANCE) {
-      clearTimer();
-    }
-  };
-
-  el.addEventListener('touchstart', e => {
-    if (e.touches && e.touches.length === 1) {
-      startPress(e.touches[0].clientX, e.touches[0].clientY);
-    }
-  }, { passive: true });
-
-  el.addEventListener('touchmove', e => {
-    if (e.touches && e.touches.length === 1) {
-      movePress(e.touches[0].clientX, e.touches[0].clientY);
-    }
-  }, { passive: true });
-
-  el.addEventListener('touchend', e => {
-    const wasLong = longPressed;
-    clearTimer();
-    if (wasLong) {
-      e.preventDefault();
-      longPressed = false;
-      return;
-    }
-    e.preventDefault();
-    handleSlotTap(type, index);
-  }, { passive: false });
-
-  el.addEventListener('touchcancel', () => {
-    clearTimer();
-    longPressed = false;
-  });
-
-  el.addEventListener('mousedown', e => {
-    if (e.button !== 0) return;
-    startPress(e.clientX, e.clientY);
-  });
-
-  el.addEventListener('mousemove', e => {
-    movePress(e.clientX, e.clientY);
-  });
-
-  el.addEventListener('mouseup', () => {
-    const wasLong = longPressed;
-    clearTimer();
-    if (wasLong) {
-      longPressed = false;
-      return;
-    }
-    handleSlotTap(type, index);
-  });
-
-  el.addEventListener('mouseleave', () => {
-    clearTimer();
-  });
-
-  el.addEventListener('contextmenu', e => {
-    e.preventDefault();
-    state.selectedSlot = { type, index };
-    renderAll();
-    openPlayerPickerForSlot({ type, index });
-  });
+function onSlotClick(type, index) {
+  state.selectedSlot = { type, index };
+  renderSelectedTargetBadge();
+  renderPitch();
+  renderBench();
+  openPlayerPickerForSlot({ type, index });
 }
 
 function openPlayerPickerForSlot(slot) {
   state.selectedSlot = slot || { type: 'xi', index: 0 };
   const label = getSlotLabel(state.selectedSlot);
-  document.getElementById('picker-modal-title').textContent = '交代・配置する選手を選択';
+  document.getElementById('picker-modal-title').textContent = '選手を選択';
   document.getElementById('picker-modal-sub').textContent = `対象枠: ${label}`;
   renderPosFilterButtons();
   renderRoster();
@@ -788,6 +662,7 @@ function renderPitch() {
 
     const el = document.createElement('button');
     el.type = 'button';
+    el.onclick = () => onSlotClick('xi', idx);
     el.style.left = `${pos.x}%`;
     el.style.top = `${pos.y}%`;
     el.className = `slot-btn absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center focus:outline-none ${
@@ -819,7 +694,6 @@ function renderPitch() {
       `;
     }
 
-    bindSlotGestures(el, 'xi', idx);
     container.appendChild(el);
   });
 
@@ -840,6 +714,7 @@ function renderBench() {
 
     const btn = document.createElement('button');
     btn.type = 'button';
+    btn.onclick = () => onSlotClick('bench', i);
     btn.className = `slot-btn p-2 rounded-xl border text-left flex items-center gap-2 transition ${
       isSelected
         ? 'bg-slate-800 border-amber-400 ring-2 ring-amber-400/50'
@@ -858,7 +733,6 @@ function renderBench() {
       `;
     }
 
-    bindSlotGestures(btn, 'bench', i);
     container.appendChild(btn);
   }
 }
