@@ -75,18 +75,44 @@
         <button type="button" data-form="4-3-3" onclick="changeFormation('4-3-3')" class="form-btn px-2.5 py-1 rounded-lg text-xs font-black border transition">4-3-3</button>
         <button type="button" data-form="3-4-2-1" onclick="changeFormation('3-4-2-1')" class="form-btn px-2.5 py-1 rounded-lg text-xs font-black border transition">3-4-2-1</button>
       </div>
-      <span id="selected-target-badge" class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-400/30 whitespace-nowrap">
-        先発 1 (GK)
+      <span id="selected-target-badge" title="現在選択中の枠" class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-400/30 whitespace-nowrap">
+        選択中: 先発 1 (GK)
       </span>
+    </div>
+
+    <!-- 対戦相手バー（布陣のすぐ下） -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 space-y-2">
+      <div class="flex items-center justify-between gap-2">
+        <label for="opponent-input" class="text-xs font-black text-white flex items-center gap-1.5 shrink-0">
+          <span class="w-1.5 h-3.5 bg-amber-400 rounded-full"></span>
+          <span>対戦相手</span>
+        </label>
+        <span class="text-[10px] text-slate-400">候補から選ぶか自由入力（J1・ACLE・未定など）</span>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-2">
+        <input id="opponent-input" type="text" placeholder="例: 浦和レッズ / ACLE 未定 / 任意クラブ名"
+          oninput="updateOpponent()"
+          class="flex-1 min-w-0 px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs sm:text-sm font-bold text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-400">
+        <button type="button" onclick="setOpponent('')"
+          class="px-3 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 shrink-0 transition">
+          クリア
+        </button>
+      </div>
+
+      <div id="opponent-presets" class="flex items-center gap-1.5 overflow-x-auto pb-0.5"></div>
     </div>
 
     <!-- 試合タイトル＆メモカード -->
     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
       <div class="flex items-start justify-between gap-2">
         <div class="flex-1 min-w-0">
-          <input id="match-title" type="text" value="明治安田J1リーグ 予想スタメン" oninput="updateMeta()"
-            aria-label="見出し・試合タイトル"
-            class="w-full bg-transparent text-sm sm:text-base font-black text-white focus:outline-none border-b border-transparent focus:border-amber-400 pb-0.5">
+          <div class="flex items-center gap-2 flex-wrap">
+            <input id="match-title" type="text" value="明治安田J1リーグ 予想スタメン" oninput="updateMeta()"
+              aria-label="見出し・試合タイトル"
+              class="min-w-0 flex-1 bg-transparent text-sm sm:text-base font-black text-white focus:outline-none border-b border-transparent focus:border-amber-400 pb-0.5">
+            <span id="opponent-display-badge" class="hidden px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-400/50 text-[11px] font-black text-amber-300 shrink-0"></span>
+          </div>
           <div class="flex items-center gap-2 mt-1.5">
             <span id="current-form-badge" class="px-2 py-0.5 rounded bg-red-800 border border-amber-400/60 text-[10px] font-black text-white">4-4-2</span>
             <input id="match-memo" type="text" value="勝利あるのみ！#antlers" oninput="updateMeta()"
@@ -254,11 +280,24 @@
   <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 hidden px-4 py-2 rounded-full bg-slate-800 text-white text-xs font-bold border border-amber-400/50 shadow-xl whitespace-nowrap"></div>
 
 <script>
-const STORAGE_KEY = 'kashima_lineup_builder_v4';
-const HISTORY_KEY = 'kashima_lineup_history_v2';
+const STORAGE_KEY = 'kashima_lineup_builder_v5';
+const HISTORY_KEY = 'kashima_lineup_history_v3';
 const APP_URL = 'https://syou0120.github.io/kashima-lineup-builder/';
 const MAX_HISTORY = 3;
 const DEFAULT_BENCH_SIZE = 9;
+
+const OPPONENT_PRESETS = [
+  '対戦相手未定',
+  'ACLE 対戦相手未定',
+  '浦和レッズ',
+  'FC東京',
+  '川崎フロンターレ',
+  '横浜F・マリノス',
+  'ガンバ大阪',
+  'サンフレッチェ広島',
+  'ヴィッセル神戸',
+  '名古屋グランパス'
+];
 
 const INITIAL_PLAYERS = [
   // GK (4)
@@ -368,6 +407,7 @@ const DEFAULT_BENCH_IDS = [21, 2, 25, 10, 14, 18, 11, 77, 19, null, null, null];
 
 let state = {
   matchTitle: '明治安田J1リーグ 予想スタメン',
+  opponent: '',
   matchMemo: '勝利あるのみ！#antlers',
   formation: '4-4-2',
   benchSize: DEFAULT_BENCH_SIZE,
@@ -405,6 +445,7 @@ function saveState() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       matchTitle: state.matchTitle,
+      opponent: state.opponent,
       matchMemo: state.matchMemo,
       formation: state.formation,
       benchSize: state.benchSize,
@@ -427,6 +468,7 @@ function loadState() {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed.matchTitle !== undefined) state.matchTitle = parsed.matchTitle;
+      if (parsed.opponent !== undefined) state.opponent = parsed.opponent;
       if (parsed.matchMemo !== undefined) state.matchMemo = parsed.matchMemo;
       if (parsed.formation && FORMATIONS[parsed.formation]) state.formation = parsed.formation;
       if (parsed.benchSize === 9 || parsed.benchSize === 12) state.benchSize = parsed.benchSize;
@@ -451,8 +493,18 @@ function loadState() {
   } catch (e) {}
 }
 
+function syncInputsFromState() {
+  const titleEl = document.getElementById('match-title');
+  const oppEl = document.getElementById('opponent-input');
+  const memoEl = document.getElementById('match-memo');
+  if (titleEl) titleEl.value = state.matchTitle;
+  if (oppEl) oppEl.value = state.opponent;
+  if (memoEl) memoEl.value = state.matchMemo;
+}
+
 function resetToDefault() {
   state.matchTitle = '明治安田J1リーグ 予想スタメン';
+  state.opponent = '';
   state.matchMemo = '勝利あるのみ！#antlers';
   state.formation = '4-4-2';
   state.benchSize = DEFAULT_BENCH_SIZE;
@@ -460,8 +512,7 @@ function resetToDefault() {
   state.bench = normalizeBenchArray(DEFAULT_BENCH_IDS, DEFAULT_BENCH_SIZE);
   state.players = JSON.parse(JSON.stringify(INITIAL_PLAYERS));
   state.selectedSlot = { type: 'xi', index: 0 };
-  document.getElementById('match-title').value = state.matchTitle;
-  document.getElementById('match-memo').value = state.matchMemo;
+  syncInputsFromState();
   saveState();
   renderAll();
   showToast('初期スタメンに戻しました');
@@ -471,6 +522,20 @@ function updateMeta() {
   state.matchTitle = document.getElementById('match-title')?.value || '';
   state.matchMemo = document.getElementById('match-memo')?.value || '';
   saveState();
+}
+
+function updateOpponent() {
+  state.opponent = document.getElementById('opponent-input')?.value || '';
+  saveState();
+  renderOpponentUI();
+}
+
+function setOpponent(name) {
+  state.opponent = name;
+  const oppEl = document.getElementById('opponent-input');
+  if (oppEl) oppEl.value = name;
+  saveState();
+  renderOpponentUI();
 }
 
 function changeFormation(form) {
@@ -588,6 +653,7 @@ function toggleInjured(playerId) {
 function saveSnapshotToHistory() {
   saveState();
   const title = (document.getElementById('match-title')?.value || '予想スタメン').trim() || '予想スタメン';
+  const opponent = (document.getElementById('opponent-input')?.value || '').trim();
   const memo = (document.getElementById('match-memo')?.value || '').trim();
   const now = new Date();
   const timeStr = `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -596,6 +662,7 @@ function saveSnapshotToHistory() {
     id: Date.now(),
     savedAt: timeStr,
     matchTitle: title,
+    opponent,
     matchMemo: memo,
     formation: state.formation,
     benchSize: state.benchSize,
@@ -614,14 +681,14 @@ function loadHistoryItem(id) {
   if (!item) return;
 
   state.matchTitle = item.matchTitle;
+  state.opponent = item.opponent || '';
   state.matchMemo = item.matchMemo;
   state.formation = FORMATIONS[item.formation] ? item.formation : '4-4-2';
   state.benchSize = (item.benchSize === 9 || item.benchSize === 12) ? item.benchSize : DEFAULT_BENCH_SIZE;
   state.startingXI = Array.isArray(item.startingXI) ? [...item.startingXI] : [...DEFAULT_XI_IDS];
   state.bench = normalizeBenchArray(item.bench, state.benchSize);
 
-  document.getElementById('match-title').value = state.matchTitle;
-  document.getElementById('match-memo').value = state.matchMemo;
+  syncInputsFromState();
   saveState();
   renderAll();
   showToast(`「${item.matchTitle}」を呼び出しました`);
@@ -634,6 +701,37 @@ function deleteHistoryItem(id) {
   showToast('履歴を削除しました');
 }
 
+function renderOpponentUI() {
+  const opp = (state.opponent || '').trim();
+  const badge = document.getElementById('opponent-display-badge');
+  if (badge) {
+    if (opp) {
+      badge.textContent = `vs ${opp}`;
+      badge.classList.remove('hidden');
+    } else {
+      badge.textContent = '';
+      badge.classList.add('hidden');
+    }
+  }
+
+  const presetWrap = document.getElementById('opponent-presets');
+  if (presetWrap) {
+    presetWrap.innerHTML = OPPONENT_PRESETS.map(name => {
+      const active = opp === name;
+      return `
+        <button type="button" onclick="setOpponent(${JSON.stringify(name)})"
+          class="px-2.5 py-1 rounded-lg text-[11px] font-bold border whitespace-nowrap shrink-0 transition ${
+            active
+              ? 'bg-red-700 text-white border-amber-400 shadow'
+              : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-600'
+          }">
+          ${name}
+        </button>
+      `;
+    }).join('');
+  }
+}
+
 function renderHistory() {
   const container = document.getElementById('history-list');
   if (!container) return;
@@ -643,25 +741,28 @@ function renderHistory() {
     return;
   }
 
-  container.innerHTML = state.history.map(item => `
-    <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-950/85 border border-slate-800">
-      <button type="button" onclick="loadHistoryItem(${item.id})" class="text-left flex-1 min-w-0">
-        <div class="flex items-center gap-1.5">
-          <span class="px-1.5 py-0.5 rounded bg-red-800 text-[10px] font-black text-white shrink-0">${item.formation}</span>
-          <span class="text-xs font-black text-white truncate">${item.matchTitle}</span>
+  container.innerHTML = state.history.map(item => {
+    const oppText = item.opponent ? ` · vs ${item.opponent}` : '';
+    return `
+      <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-950/85 border border-slate-800">
+        <button type="button" onclick="loadHistoryItem(${item.id})" class="text-left flex-1 min-w-0">
+          <div class="flex items-center gap-1.5">
+            <span class="px-1.5 py-0.5 rounded bg-red-800 text-[10px] font-black text-white shrink-0">${item.formation}</span>
+            <span class="text-xs font-black text-white truncate">${item.matchTitle}${oppText}</span>
+          </div>
+          <div class="text-[10px] text-slate-400 mt-0.5 truncate">${item.savedAt}${item.matchMemo ? ' · ' + item.matchMemo : ''}</div>
+        </button>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button type="button" onclick="loadHistoryItem(${item.id})" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700">
+            読込
+          </button>
+          <button type="button" onclick="deleteHistoryItem(${item.id})" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-900 hover:bg-rose-950 text-slate-400 hover:text-rose-300 border border-slate-800">
+            削除
+          </button>
         </div>
-        <div class="text-[10px] text-slate-400 mt-0.5 truncate">${item.savedAt}${item.matchMemo ? ' · ' + item.matchMemo : ''}</div>
-      </button>
-      <div class="flex items-center gap-1.5 shrink-0">
-        <button type="button" onclick="loadHistoryItem(${item.id})" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700">
-          読込
-        </button>
-        <button type="button" onclick="deleteHistoryItem(${item.id})" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-900 hover:bg-rose-950 text-slate-400 hover:text-rose-300 border border-slate-800">
-          削除
-        </button>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 function renderFormationButtons() {
@@ -811,7 +912,7 @@ function renderInjuredList() {
 function renderSelectedTargetBadge() {
   const badge = document.getElementById('selected-target-badge');
   if (!badge) return;
-  badge.textContent = getSlotLabel(state.selectedSlot);
+  badge.textContent = `選択中: ${getSlotLabel(state.selectedSlot)}`;
 }
 
 function renderRoster() {
@@ -868,6 +969,7 @@ function renderRoster() {
 }
 
 function renderAll() {
+  renderOpponentUI();
   renderFormationButtons();
   renderBenchSizeButtons();
   renderPosFilterButtons();
@@ -902,6 +1004,7 @@ async function createLineupCanvas() {
 
   const coords = FORMATIONS[state.formation] || FORMATIONS['4-4-2'];
   const titleText = (document.getElementById('match-title')?.value || '明治安田J1リーグ 予想スタメン').trim();
+  const opponentText = (document.getElementById('opponent-input')?.value || '').trim();
   const memoText = (document.getElementById('match-memo')?.value || '').trim();
   const assignedCount = state.startingXI.filter(Boolean).length;
 
@@ -936,11 +1039,12 @@ async function createLineupCanvas() {
   ctx.strokeStyle = '#334155';
   ctx.stroke();
 
+  const headerTitle = opponentText ? `${titleText}（vs ${opponentText}）` : titleText;
   ctx.fillStyle = '#ffffff';
-  ctx.font = '900 15px "Noto Sans JP", "Inter", sans-serif';
+  ctx.font = '900 14px "Noto Sans JP", "Inter", sans-serif';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  ctx.fillText(titleText, 28, 34);
+  ctx.fillText(headerTitle, 28, 34, width - 125);
 
   ctx.fillStyle = '#9e0b0f';
   roundRect(ctx, 28, 47, 56, 20, 4);
@@ -955,7 +1059,7 @@ async function createLineupCanvas() {
   ctx.fillStyle = '#fde68a';
   ctx.font = '700 11px "Noto Sans JP", "Inter", sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText(memoText, 92, 57);
+  ctx.fillText(memoText, 92, 57, width - 190);
 
   ctx.fillStyle = '#94a3b8';
   ctx.font = '700 9px "Inter", sans-serif';
@@ -1171,6 +1275,7 @@ function closeShareModal() {
 function shareToX() {
   saveState();
   const title = (document.getElementById('match-title')?.value || '予想スタメン').trim();
+  const opponent = (document.getElementById('opponent-input')?.value || '').trim();
   const memo = (document.getElementById('match-memo')?.value || '').trim();
 
   const grouped = { GK: [], DF: [], MF: [], FW: [] };
@@ -1185,8 +1290,10 @@ function shareToX() {
     .filter(pos => grouped[pos].length > 0)
     .map(pos => `${pos}: ${grouped[pos].join('・')}`);
 
+  const heading = opponent ? `【${title} vs ${opponent}】(${state.formation})` : `【${title}】(${state.formation})`;
+
   const postText = [
-    `【${title}】(${state.formation})`,
+    heading,
     ...lineSummary,
     memo ? `\n${memo}` : '',
     `\nスタメン予想メーカーはこちら👇\n${APP_URL}`,
@@ -1200,9 +1307,11 @@ function shareToX() {
 async function shareNative() {
   saveState();
   const title = (document.getElementById('match-title')?.value || '予想スタメン').trim();
+  const opponent = (document.getElementById('opponent-input')?.value || '').trim();
   const memo = (document.getElementById('match-memo')?.value || '').trim();
+  const heading = opponent ? `${title} vs ${opponent}（${state.formation}）` : `${title}（${state.formation}）`;
   const shareText = [
-    `${title}（${state.formation}）${memo ? ' ' + memo : ''}`,
+    `${heading}${memo ? ' ' + memo : ''}`,
     `スタメン予想メーカーはこちら👇`,
     APP_URL,
     `by @syou0120`
@@ -1241,6 +1350,7 @@ async function shareNative() {
 async function copyLineupText() {
   saveState();
   const title = (document.getElementById('match-title')?.value || '予想スタメン').trim();
+  const opponent = (document.getElementById('opponent-input')?.value || '').trim();
   const memo = (document.getElementById('match-memo')?.value || '').trim();
   const coords = FORMATIONS[state.formation] || FORMATIONS['4-4-2'];
 
@@ -1255,8 +1365,10 @@ async function copyLineupText() {
     .filter(Boolean)
     .map(p => `#${p.number} ${getShortName(p)}`);
 
+  const heading = opponent ? `【${title} vs ${opponent}】(${state.formation})` : `【${title}】(${state.formation})`;
+
   const text = [
-    `【${title}】(${state.formation})`,
+    heading,
     ...xiLines,
     benchNames.length ? `\nSUB: ${benchNames.join(' / ')}` : '',
     memo ? `\n${memo}` : '',
@@ -1284,8 +1396,7 @@ function showToast(msg) {
 }
 
 loadState();
-document.getElementById('match-title').value = state.matchTitle;
-document.getElementById('match-memo').value = state.matchMemo;
+syncInputsFromState();
 renderAll();
 </script>
 </body>
