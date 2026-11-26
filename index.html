@@ -1132,17 +1132,22 @@ function shareToX() {
   saveState();
   const title = (document.getElementById('match-title')?.value || '予想スタメン').trim();
   const memo = (document.getElementById('match-memo')?.value || '').trim();
-  const coords = FORMATIONS[state.formation] || FORMATIONS['4-4-2'];
 
-  const xiLines = state.startingXI.map((pid, idx) => {
-    const role = coords[idx]?.role || '';
+  const grouped = { GK: [], DF: [], MF: [], FW: [] };
+  state.startingXI.forEach(pid => {
     const p = state.players.find(item => item.id === pid);
-    return p ? `${role}: #${p.number} ${getShortName(p)}` : `${role}: 未定`;
+    if (!p) return;
+    const linePos = ['GK', 'DF', 'MF', 'FW'].includes(p.pos) ? p.pos : 'MF';
+    grouped[linePos].push(getShortName(p));
   });
+
+  const lineSummary = ['GK', 'DF', 'MF', 'FW']
+    .filter(pos => grouped[pos].length > 0)
+    .map(pos => `${pos}: ${grouped[pos].join('・')}`);
 
   const postText = [
     `【${title}】(${state.formation})`,
-    ...xiLines,
+    ...lineSummary,
     memo ? `\n${memo}` : '',
     `\nスタメン予想メーカーはこちら👇\n${APP_URL}`,
     `by @syou0120`
@@ -1156,7 +1161,12 @@ async function shareNative() {
   saveState();
   const title = (document.getElementById('match-title')?.value || '予想スタメン').trim();
   const memo = (document.getElementById('match-memo')?.value || '').trim();
-  const shareText = `${title}（${state.formation}）${memo ? ' ' + memo : ''} by @syou0120`;
+  const shareText = [
+    `${title}（${state.formation}）${memo ? ' ' + memo : ''}`,
+    `スタメン予想メーカーはこちら👇`,
+    APP_URL,
+    `by @syou0120`
+  ].join('\n');
 
   showToast('共有用データを準備中...');
   try {
