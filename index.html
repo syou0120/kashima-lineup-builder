@@ -252,6 +252,7 @@
 <script>
 const STORAGE_KEY = 'kashima_lineup_builder_v4';
 const HISTORY_KEY = 'kashima_lineup_history_v2';
+const APP_URL = 'https://syou0120.github.io/kashima-lineup-builder/';
 const MAX_HISTORY = 3;
 
 const INITIAL_PLAYERS = [
@@ -625,7 +626,7 @@ function renderHistory() {
         <button type="button" onclick="loadHistoryItem(${item.id})" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700">
           読込
         </button>
-        <button type="button" onclick="deleteHistoryItem(${item.id})" class="px-2 py-1 rounded-lg text-[11px] font-bold bg-slate-900 hover:bg-rose-950 text-slate-400 hover:text-rose-300 border border-slate-800">
+        <button type="button" onclick="deleteHistoryItem(${item.id})" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-900 hover:bg-rose-950 text-slate-400 hover:text-rose-300 border border-slate-800">
           削除
         </button>
       </div>
@@ -1143,10 +1144,11 @@ function shareToX() {
     `【${title}】(${state.formation})`,
     ...xiLines,
     memo ? `\n${memo}` : '',
+    `\nスタメン予想メーカーはこちら👇\n${APP_URL}`,
     `by @syou0120`
   ].filter(Boolean).join('\n');
 
-  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(postText)}`;
+  const url = `https://x.com/intent/tweet?text=${encodeURIComponent(postText)}`;
   window.open(url, '_blank', 'noopener,noreferrer');
 }
 
