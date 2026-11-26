@@ -87,11 +87,11 @@
           <span class="w-1.5 h-3.5 bg-amber-400 rounded-full"></span>
           <span>対戦相手</span>
         </label>
-        <span class="text-[10px] text-slate-400">候補から選ぶか自由入力（J1・ACLE・未定など）</span>
+        <span class="text-[10px] text-slate-400">J1から選ぶか自由入力</span>
       </div>
 
       <div class="flex flex-col sm:flex-row gap-2">
-        <input id="opponent-input" type="text" placeholder="例: 浦和レッズ / ACLE 未定 / 任意クラブ名"
+        <input id="opponent-input" type="text" placeholder="例: 浦和レッズ / ACLE対戦相手未定 / 任意クラブ名"
           oninput="updateOpponent()"
           class="flex-1 min-w-0 px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs sm:text-sm font-bold text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-400">
         <button type="button" onclick="setOpponent('')"
@@ -100,7 +100,24 @@
         </button>
       </div>
 
-      <div id="opponent-presets" class="flex items-center gap-1.5 overflow-x-auto pb-0.5"></div>
+      <!-- クイックボタン（J1・ACLE対戦相手未定・対戦相手未定） -->
+      <div class="flex items-center gap-1.5 flex-wrap">
+        <button type="button" onclick="toggleJ1List()" id="j1-toggle-btn"
+          class="px-3 py-1 rounded-lg text-xs font-black border transition bg-red-700 hover:bg-red-600 text-white border-amber-400/70">
+          J1 <span id="j1-arrow" class="text-[10px] ml-0.5">▼</span>
+        </button>
+        <button type="button" onclick="setOpponent('ACLE対戦相手未定')"
+          class="opp-preset-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition bg-slate-950 hover:border-slate-500 text-slate-200 border-slate-800">
+          ACLE対戦相手未定
+        </button>
+        <button type="button" onclick="setOpponent('対戦相手未定')"
+          class="opp-preset-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition bg-slate-950 hover:border-slate-500 text-slate-200 border-slate-800">
+          対戦相手未定
+        </button>
+      </div>
+
+      <!-- J1 縦展開リスト（初期状態は非表示） -->
+      <div id="j1-club-list" class="hidden pt-2 border-t border-slate-800/90 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1.5"></div>
     </div>
 
     <!-- 試合タイトル＆メモカード -->
@@ -280,23 +297,33 @@
   <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 hidden px-4 py-2 rounded-full bg-slate-800 text-white text-xs font-bold border border-amber-400/50 shadow-xl whitespace-nowrap"></div>
 
 <script>
-const STORAGE_KEY = 'kashima_lineup_builder_v5';
-const HISTORY_KEY = 'kashima_lineup_history_v3';
+const STORAGE_KEY = 'kashima_lineup_builder_v6';
+const HISTORY_KEY = 'kashima_lineup_history_v4';
 const APP_URL = 'https://syou0120.github.io/kashima-lineup-builder/';
 const MAX_HISTORY = 3;
 const DEFAULT_BENCH_SIZE = 9;
 
-const OPPONENT_PRESETS = [
-  '対戦相手未定',
-  'ACLE 対戦相手未定',
+// 鹿島アントラーズ以外のJ1クラブ一覧
+const J1_OTHER_CLUBS = [
+  '水戸ホーリーホック',
   '浦和レッズ',
+  'ジェフユナイテッド千葉',
+  '柏レイソル',
   'FC東京',
+  '東京ヴェルディ',
+  'FC町田ゼルビア',
   '川崎フロンターレ',
   '横浜F・マリノス',
+  '清水エスパルス',
+  '名古屋グランパス',
+  '京都サンガF.C.',
   'ガンバ大阪',
-  'サンフレッチェ広島',
+  'セレッソ大阪',
   'ヴィッセル神戸',
-  '名古屋グランパス'
+  'ファジアーノ岡山',
+  'サンフレッチェ広島',
+  'アビスパ福岡',
+  'V・ファーレン長崎'
 ];
 
 const INITIAL_PLAYERS = [
@@ -416,6 +443,7 @@ let state = {
   players: JSON.parse(JSON.stringify(INITIAL_PLAYERS)),
   selectedSlot: { type: 'xi', index: 0 },
   posFilter: 'ALL',
+  j1Open: false,
   history: []
 };
 
@@ -512,6 +540,7 @@ function resetToDefault() {
   state.bench = normalizeBenchArray(DEFAULT_BENCH_IDS, DEFAULT_BENCH_SIZE);
   state.players = JSON.parse(JSON.stringify(INITIAL_PLAYERS));
   state.selectedSlot = { type: 'xi', index: 0 };
+  state.j1Open = false;
   syncInputsFromState();
   saveState();
   renderAll();
@@ -530,11 +559,17 @@ function updateOpponent() {
   renderOpponentUI();
 }
 
-function setOpponent(name) {
+function setOpponent(name, closeJ1 = false) {
   state.opponent = name;
+  if (closeJ1) state.j1Open = false;
   const oppEl = document.getElementById('opponent-input');
   if (oppEl) oppEl.value = name;
   saveState();
+  renderOpponentUI();
+}
+
+function toggleJ1List() {
+  state.j1Open = !state.j1Open;
   renderOpponentUI();
 }
 
@@ -714,21 +749,39 @@ function renderOpponentUI() {
     }
   }
 
-  const presetWrap = document.getElementById('opponent-presets');
-  if (presetWrap) {
-    presetWrap.innerHTML = OPPONENT_PRESETS.map(name => {
-      const active = opp === name;
-      return `
-        <button type="button" onclick="setOpponent(${JSON.stringify(name)})"
-          class="px-2.5 py-1 rounded-lg text-[11px] font-bold border whitespace-nowrap shrink-0 transition ${
-            active
-              ? 'bg-red-700 text-white border-amber-400 shadow'
-              : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-600'
-          }">
-          ${name}
-        </button>
-      `;
-    }).join('');
+  const arrow = document.getElementById('j1-arrow');
+  if (arrow) arrow.textContent = state.j1Open ? '▲' : '▼';
+
+  document.querySelectorAll('.opp-preset-btn').forEach(btn => {
+    const active = opp === btn.textContent.trim();
+    btn.className = `opp-preset-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition ${
+      active
+        ? 'bg-amber-500 text-slate-950 border-amber-300 shadow'
+        : 'bg-slate-950 hover:border-slate-500 text-slate-200 border-slate-800'
+    }`;
+  });
+
+  const j1List = document.getElementById('j1-club-list');
+  if (j1List) {
+    if (!state.j1Open) {
+      j1List.classList.add('hidden');
+      j1List.innerHTML = '';
+    } else {
+      j1List.classList.remove('hidden');
+      j1List.innerHTML = J1_OTHER_CLUBS.map(club => {
+        const active = opp === club;
+        return `
+          <button type="button" onclick="setOpponent(${JSON.stringify(club)}, true)"
+            class="px-3 py-1.5 rounded-lg text-xs font-bold border text-left transition ${
+              active
+                ? 'bg-red-700 text-white border-amber-400 shadow'
+                : 'bg-slate-950 hover:bg-slate-800 text-slate-200 border-slate-800'
+            }">
+            ${club}
+          </button>
+        `;
+      }).join('');
+    }
   }
 }
 
