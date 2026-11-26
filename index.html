@@ -4,1237 +4,741 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>鹿島アントラーズ スタメン予想メーカー</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Noto+Sans+JP:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <style>
+  :root {
+    --bg: #0b1120;
+    --card: #111827;
+    --input: #030712;
+    --border: #334155;
+    --red: #991b1b;
+    --red-dark: #450a0a;
+    --gold: #fbbf24;
+    --gold-btn: #f59e0b;
+    --green: #059669;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
-    font-family: 'Noto Sans JP', 'Inter', sans-serif;
-    background-color: #0b1120;
-    color: #f8fafc;
-    -webkit-tap-highlight-color: transparent;
+    margin: 0;
+    padding-bottom: 72px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
   }
-  .font-num {
-    font-family: 'Inter', 'Noto Sans JP', sans-serif;
-    font-variant-numeric: tabular-nums;
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: linear-gradient(90deg, var(--red) 0%, #7f1d1d 60%, var(--red-dark) 100%);
+    border-bottom: 1px solid rgba(251, 191, 36, 0.35);
+    padding: 10px 14px;
   }
-  .antlers-header {
-    background: linear-gradient(90deg, #991b1b 0%, #7f1d1d 55%, #450a0a 100%);
+  .header-inner {
+    max-width: 680px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
   }
-  .soccer-pitch {
+  h1 { margin: 0; font-size: 15px; font-weight: 900; color: #fff; }
+  .sub { margin: 0; font-size: 11px; color: #fde68a; }
+  main {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  section {
+    background: var(--card);
+    border: 1px solid #1e293b;
+    border-radius: 16px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  section.highlight { border: 2px solid rgba(251, 191, 36, 0.55); }
+  h2 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .bar { width: 5px; height: 16px; border-radius: 99px; display: inline-block; }
+  .bar-red { background: #dc2626; }
+  .bar-gold { background: var(--gold); }
+  .bar-green { background: #10b981; }
+  label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
+  input[type="text"], select, textarea {
+    width: 100%;
+    padding: 9px 11px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--input);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+  }
+  textarea { font-weight: 500; resize: vertical; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--gold); }
+  button {
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 800;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--input);
+    color: #e2e8f0;
+    padding: 8px 10px;
+    font-size: 12px;
+    touch-action: manipulation;
+  }
+  button:active { transform: scale(0.98); }
+  button.active-red { background: #b91c1c; color: #fff; border-color: var(--gold); }
+  button.active-gold { background: var(--gold-btn); color: #090d16; border-color: #fde68a; }
+  button.active-green { background: var(--green); color: #fff; border-color: #6ee7b7; }
+  .btn-reset { background: rgba(0,0,0,0.6); color: #fff; border-color: rgba(255,255,255,0.25); padding: 6px 10px; font-size: 11px; }
+  .btn-gold { background: var(--gold-btn); color: #090d16; border: none; font-weight: 900; }
+  .btn-x {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    background: #0f172a;
+    color: #fff;
+    font-weight: 900;
+    font-size: 13px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--gold);
+  }
+  .row-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .pitch {
+    position: relative;
     background: repeating-linear-gradient(
       to bottom,
-      #1b6332 0px,
-      #1b6332 44px,
-      #207039 44px,
-      #207039 88px
+      #14532d 0px,
+      #14532d 44px,
+      #166534 44px,
+      #166534 88px
     );
-    box-shadow: inset 0 0 36px rgba(0, 0, 0, 0.35);
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-radius: 14px;
+    padding: 14px 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 360px;
   }
-  .pitch-line {
-    border-color: rgba(255, 255, 255, 0.72);
-  }
-  .antlers-red {
-    background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%);
+  .pitch-row {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
   }
   .slot-btn {
-    -webkit-touch-callout: none;
-    user-select: none;
+    background: rgba(15, 23, 42, 0.92);
+    border: 1.5px solid rgba(251, 191, 36, 0.65);
+    color: #fff;
+    border-radius: 12px;
+    padding: 7px 9px;
+    min-width: 78px;
+    max-width: 124px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
   }
+  .slot-pos {
+    font-size: 10px;
+    font-weight: 900;
+    color: var(--gold);
+    letter-spacing: 0.04em;
+  }
+  .slot-name {
+    font-size: 12px;
+    font-weight: 900;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 108px;
+  }
+  .slot-empty { color: var(--muted); font-weight: 700; }
+  pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: var(--input);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #fff;
+  }
+  .modal-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(0, 0, 0, 0.82);
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-bg.open { display: flex; }
+  @media (min-width: 540px) { .modal-bg { align-items: center; padding: 16px; } }
+  .modal-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    max-width: 500px;
+    max-height: 85vh;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  @media (min-width: 540px) { .modal-card { border-radius: 18px; } }
+  .player-list { overflow-y: auto; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .player-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 10px;
+    text-align: left;
+  }
+  .num-badge {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #b91c1c, #7f1d1d);
+    color: #fff;
+    font-weight: 900;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 60;
+    background: #1e293b;
+    color: #fff;
+    border: 1px solid var(--gold);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 800;
+    display: none;
+    white-space: nowrap;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  .toast.show { display: block; }
 </style>
 </head>
-<body class="min-h-screen pb-16">
+<body>
 
-  <!-- ヘッダー -->
-  <header class="antlers-header border-b border-amber-400/30 sticky top-0 z-30">
-    <div class="max-w-5xl mx-auto px-3.5 py-2.5 flex items-center justify-between gap-2">
-      <div class="min-w-0">
-        <h1 class="text-sm sm:text-lg font-black tracking-tight text-white truncate">スタメン予想メーカー</h1>
-        <p class="text-[10px] text-amber-200/85 truncate">鹿島アントラーズ · Created by @syou0120</p>
-      </div>
-      <div class="flex items-center gap-1.5 shrink-0">
-        <button type="button" onclick="openPlayerPickerForSelected()"
-          class="px-2.5 py-1.5 rounded-lg text-[11px] font-black bg-amber-400 hover:bg-amber-300 text-slate-950 shadow transition">
-          選手一覧
-        </button>
-        <button type="button" onclick="resetToDefault()"
-          class="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-slate-950/75 hover:bg-slate-900 text-slate-100 border border-white/20 transition">
-          リセット
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <main class="max-w-5xl mx-auto px-3.5 pt-3.5 space-y-3.5">
-
-    <!-- 布陣バー -->
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl px-3 py-2.5 flex items-center justify-between gap-2 overflow-x-auto">
-      <div class="flex items-center gap-1.5 shrink-0">
-        <span class="text-xs font-bold text-slate-400 mr-0.5">布陣:</span>
-        <button type="button" data-form="4-4-2" onclick="changeFormation('4-4-2')" class="form-btn px-2.5 py-1 rounded-lg text-xs font-black border transition">4-4-2</button>
-        <button type="button" data-form="4-2-3-1" onclick="changeFormation('4-2-3-1')" class="form-btn px-2.5 py-1 rounded-lg text-xs font-black border transition">4-2-3-1</button>
-        <button type="button" data-form="4-3-3" onclick="changeFormation('4-3-3')" class="form-btn px-2.5 py-1 rounded-lg text-xs font-black border transition">4-3-3</button>
-        <button type="button" data-form="3-4-2-1" onclick="changeFormation('3-4-2-1')" class="form-btn px-2.5 py-1 rounded-lg text-xs font-black border transition">3-4-2-1</button>
-      </div>
-      <span id="selected-target-badge" class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-400/30 whitespace-nowrap">
-        先発 1 (GK)
-      </span>
-    </div>
-
-    <!-- 試合タイトル＆メモカード -->
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
-      <div class="flex items-start justify-between gap-2">
-        <div class="flex-1 min-w-0">
-          <input id="match-title" type="text" value="明治安田J1リーグ 予想スタメン" oninput="updateMeta()"
-            aria-label="見出し・試合タイトル"
-            class="w-full bg-transparent text-sm sm:text-base font-black text-white focus:outline-none border-b border-transparent focus:border-amber-400 pb-0.5">
-          <div class="flex items-center gap-2 mt-1.5">
-            <span id="current-form-badge" class="px-2 py-0.5 rounded bg-red-800 border border-amber-400/60 text-[10px] font-black text-white">4-4-2</span>
-            <input id="match-memo" type="text" value="勝利あるのみ！#antlers" oninput="updateMeta()"
-              aria-label="ひとことメモ"
-              class="flex-1 min-w-0 bg-transparent text-xs font-bold text-amber-200 focus:outline-none border-b border-transparent focus:border-amber-400">
-          </div>
-        </div>
-        <div class="text-right shrink-0">
-          <div class="text-[9px] font-bold tracking-wider text-slate-400">STARTING XI</div>
-          <div id="xi-count" class="text-sm font-black font-num text-amber-400">11 / 11</div>
-        </div>
-      </div>
-      <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800/80">
-        <span>枠をタップすると選手一覧が開きます</span>
-        <button type="button" onclick="openPlayerPickerForSelected()" class="text-amber-300 font-bold underline shrink-0 ml-2">一覧から選ぶ</button>
-      </div>
-    </div>
-
-    <!-- サッカーピッチ -->
-    <div class="soccer-pitch relative w-full min-h-[430px] sm:min-h-[520px] aspect-[4/4.7] rounded-2xl border-2 border-white/75 overflow-hidden select-none">
-      <div class="absolute inset-3 border-2 pitch-line pointer-events-none">
-        <div class="absolute top-1/2 left-0 right-0 h-0.5 bg-white/70 -translate-y-1/2"></div>
-        <div class="absolute top-1/2 left-1/2 w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 pitch-line -translate-x-1/2 -translate-y-1/2"></div>
-        <div class="absolute top-1/2 left-1/2 w-2 h-2 rounded-full bg-white/80 -translate-x-1/2 -translate-y-1/2"></div>
-        <div class="absolute top-0 left-1/2 w-[54%] h-[15.5%] border-b-2 border-x-2 pitch-line -translate-x-1/2">
-          <div class="absolute top-0 left-1/2 w-[52%] h-[38%] border-b-2 border-x-2 pitch-line -translate-x-1/2"></div>
-        </div>
-        <div class="absolute bottom-0 left-1/2 w-[54%] h-[15.5%] border-t-2 border-x-2 pitch-line -translate-x-1/2">
-          <div class="absolute bottom-0 left-1/2 w-[52%] h-[38%] border-t-2 border-x-2 pitch-line -translate-x-1/2"></div>
-        </div>
-      </div>
-      <div id="pitch-slots" class="relative w-full h-full min-h-[430px] sm:min-h-[520px] z-10"></div>
-    </div>
-
-    <!-- ベンチメンバー -->
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5">
-      <div class="flex items-center justify-between mb-2.5">
-        <div class="flex items-center gap-2">
-          <span class="w-1.5 h-4 bg-red-600 rounded-full"></span>
-          <h2 class="text-xs sm:text-sm font-black text-white">ベンチメンバー (SUBS)</h2>
-        </div>
-        <span class="text-[10px] text-slate-400">タップで選手一覧を開く</span>
-      </div>
-      <div id="bench-slots" class="grid grid-cols-3 gap-2"></div>
-    </div>
-
-    <!-- 直近の予想履歴（最大3件） -->
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
-      <div class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2">
-          <span class="w-1.5 h-4 bg-amber-400 rounded-full"></span>
-          <h2 class="text-xs sm:text-sm font-black text-white">予想履歴（最大3件）</h2>
-        </div>
-        <button type="button" onclick="saveSnapshotToHistory()"
-          class="px-3 py-1 rounded-lg text-[11px] font-black bg-amber-500 hover:bg-amber-400 text-slate-950 transition">
-          今の予想を保存
-        </button>
-      </div>
-      <div id="history-list" class="space-y-1.5"></div>
-    </div>
-
-    <!-- 負傷離脱中リスト -->
-    <div id="injured-section" class="hidden bg-red-950/40 border border-rose-500/40 rounded-2xl p-3.5">
-      <h3 class="text-xs font-black text-rose-300 mb-2">負傷離脱中 (INJURED) — 先発・ベンチから除外</h3>
-      <div id="injured-list" class="flex flex-wrap gap-1.5"></div>
-    </div>
-
-    <!-- 共有・出力ボタン群 -->
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-2">
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        <button type="button" onclick="generateShareImage()" class="w-full py-3 px-4 rounded-xl font-black text-xs sm:text-sm bg-amber-500 hover:bg-amber-400 text-slate-950 shadow transition">
-          SNS共有用の画像を作成・保存
-        </button>
-        <button type="button" onclick="shareNative()" class="w-full py-3 px-4 rounded-xl font-black text-xs sm:text-sm bg-emerald-600 hover:bg-emerald-500 text-white shadow transition">
-          画像・テキストを共有
-        </button>
-      </div>
-      <div class="grid grid-cols-2 gap-2">
-        <button type="button" onclick="shareToX()" class="w-full py-2.5 px-3 rounded-xl font-black text-xs bg-slate-950 hover:bg-slate-800 text-white border border-slate-700 transition">
-          Xでポスト（11人）
-        </button>
-        <button type="button" onclick="copyLineupText()" class="w-full py-2.5 px-3 rounded-xl font-black text-xs bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 transition">
-          テキストをコピー
-        </button>
-      </div>
-    </div>
-
-  </main>
-
-  <!-- フッター -->
-  <footer class="max-w-5xl mx-auto px-4 mt-8 pt-4 border-t border-slate-800/80 text-center space-y-1.5 text-[11px] text-slate-400">
+<header>
+  <div class="header-inner">
     <div>
-      <a href="https://www.youtube.com/@syou0120" target="_blank" rel="noopener noreferrer"
-        class="inline-flex items-center gap-1.5 text-amber-300 hover:text-amber-200 underline underline-offset-2 font-bold transition">
-        <span>Youtubeの鹿syouチャンネル</span>
-      </a>
+      <h1>鹿島アントラーズ スタメン予想メーカー</h1>
+      <p class="sub">鹿syouチャンネル用 · X投稿URL自動付与</p>
     </div>
-    <div class="text-slate-500">
-      鹿島アントラーズ スタメン予想メーカー — Created by @syou0120
-    </div>
-  </footer>
-
-  <!-- 選手選択＆けが人切替モーダル -->
-  <div id="player-picker-modal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-black/80 p-0 sm:p-4">
-    <div class="bg-slate-900 border-t sm:border border-slate-700 rounded-t-3xl sm:rounded-2xl w-full max-w-lg p-4 space-y-3 max-h-[85vh] flex flex-col">
-      <div class="flex items-center justify-between gap-2 shrink-0">
-        <div>
-          <h3 id="picker-modal-title" class="text-sm font-black text-white">選手を選択</h3>
-          <p id="picker-modal-sub" class="text-[11px] text-amber-300 font-bold">対象枠: 先発 1 (GK)</p>
-        </div>
-        <button type="button" onclick="closePlayerPicker()" class="text-slate-400 hover:text-white text-lg font-bold px-2.5 py-1">✕</button>
-      </div>
-
-      <div class="flex items-center gap-1.5 flex-wrap shrink-0">
-        <button type="button" onclick="setPosFilter('ALL')" data-pos="ALL" class="pos-filter-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition">ALL</button>
-        <button type="button" onclick="setPosFilter('GK')" data-pos="GK" class="pos-filter-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition">GK</button>
-        <button type="button" onclick="setPosFilter('DF')" data-pos="DF" class="pos-filter-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition">DF</button>
-        <button type="button" onclick="setPosFilter('MF')" data-pos="MF" class="pos-filter-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition">MF</button>
-        <button type="button" onclick="setPosFilter('FW')" data-pos="FW" class="pos-filter-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition">FW</button>
-      </div>
-
-      <input id="player-search" type="text" placeholder="背番号や選手名で検索..." oninput="renderRoster()"
-        class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400 shrink-0">
-
-      <div id="roster-list" class="overflow-y-auto space-y-1.5 pr-1 flex-1"></div>
-
-      <div class="pt-2 border-t border-slate-800 flex justify-between items-center shrink-0">
-        <button type="button" onclick="clearSelectedSlot()" class="px-3 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-700 transition">
-          この枠を空にする
-        </button>
-        <button type="button" onclick="closePlayerPicker()" class="px-4 py-2 rounded-xl text-xs font-black bg-amber-500 hover:bg-amber-400 text-slate-950 transition">
-          完了
-        </button>
-      </div>
-    </div>
+    <button type="button" class="btn-reset" data-action="reset">リセット</button>
   </div>
+</header>
 
-  <!-- 画像プレビューモーダル -->
-  <div id="share-image-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 p-4">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-4 space-y-4 max-h-[92vh] overflow-y-auto">
-      <div class="flex items-center justify-between">
-        <h3 class="text-sm font-black text-white">SNS共有用画像プレビュー</h3>
-        <button type="button" onclick="closeShareModal()" class="text-slate-400 hover:text-white text-lg font-bold px-2">✕</button>
+<main>
+  <!-- ① 試合情報・フォーメーション -->
+  <section>
+    <h2><span class="bar bar-red"></span>① 試合情報・フォーメーション</h2>
+
+    <div class="grid-2">
+      <div>
+        <label>対戦相手</label>
+        <input id="opp-input" type="text" value="清水エスパルス" placeholder="対戦相手名">
       </div>
-      <div class="rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
-        <img id="generated-image-preview" src="" alt="生成されたスタメン画像" class="w-full h-auto block">
-      </div>
-      <div class="flex flex-col sm:flex-row gap-2">
-        <a id="download-image-link" download="kashima_lineup.png"
-          class="flex-1 py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs text-center transition">
-          PNG画像を保存する
-        </a>
-        <button type="button" onclick="closeShareModal()" class="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition">
-          閉じる
-        </button>
+      <div>
+        <label>見出し・節など</label>
+        <input id="match-label-input" type="text" value="第15節 予想スタメン" placeholder="例: 第15節 予想スタメン">
       </div>
     </div>
-  </div>
 
-  <!-- トースト通知 -->
-  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 hidden px-4 py-2 rounded-full bg-slate-800 text-white text-xs font-bold border border-amber-400/50 shadow-xl whitespace-nowrap"></div>
+    <div>
+      <label>フォーメーション</label>
+      <div class="row-wrap">
+        <button type="button" data-action="formation" data-val="4-2-3-1">4-2-3-1</button>
+        <button type="button" data-action="formation" data-val="4-4-2">4-4-2</button>
+        <button type="button" data-action="formation" data-val="4-3-3">4-3-3</button>
+        <button type="button" data-action="formation" data-val="3-4-2-1">3-4-2-1</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ② ピッチ配置（タップで選手選択） -->
+  <section>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+      <h2><span class="bar bar-green"></span>② ピッチ配置（枠をタップで選択）</h2>
+      <button type="button" data-action="clear-slots">全枠クリア</button>
+    </div>
+
+    <div id="pitch" class="pitch"></div>
+  </section>
+
+  <!-- ③ X（Twitter）投稿テキスト＆シェア -->
+  <section class="highlight">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <h2 style="color:#fcd34d;">③ X（Twitter）投稿用テキスト</h2>
+      <button type="button" class="btn-gold" data-action="copy-tweet">投稿文をコピー</button>
+    </div>
+
+    <div>
+      <label>一言コメント（任意・投稿文に反映）</label>
+      <input id="comment-input" type="text" value="勝利の立役者になってほしい！🦌🔥" placeholder="一言コメント">
+    </div>
+
+    <pre id="tweet-preview"></pre>
+
+    <a id="x-share-link" class="btn-x" href="https://x.com/intent/tweet" target="_blank" rel="noopener noreferrer">
+      X（Twitter）で投稿画面を開く（URL付き）
+    </a>
+  </section>
+</main>
+
+<!-- 選手選択モーダル -->
+<div id="player-modal" class="modal-bg">
+  <div class="modal-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div id="modal-title" style="font-weight:900;font-size:15px;">選手を選択</div>
+        <div style="font-size:11px;color:#fcd34d;">タップすると枠にセットされます</div>
+      </div>
+      <button type="button" data-action="close-modal">✕ 閉じる</button>
+    </div>
+
+    <input id="player-search" type="text" placeholder="背番号・選手名で検索...">
+    <div id="player-list" class="player-list"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
 
 <script>
-const STORAGE_KEY = 'kashima_lineup_builder_v4';
-const HISTORY_KEY = 'kashima_lineup_history_v2';
-const MAX_HISTORY = 3;
+(function () {
+  var APP_URL = 'https://syou0120.github.io/kashima-lineup-builder/';
+  var STORAGE_KEY = 'kashima_lineup_builder_v1';
 
-const INITIAL_PLAYERS = [
-  // GK (4)
-  { id: 1, number: 1, name: '早川友基', shortName: '早川友基', pos: 'GK', youth: false, injured: false },
-  { id: 21, number: 21, name: '山田大樹', shortName: '山田大樹', pos: 'GK', youth: false, injured: false },
-  { id: 29, number: 29, name: '梶川裕嗣', shortName: '梶川裕嗣', pos: 'GK', youth: false, injured: false },
-  { id: 31, number: 31, name: '藤井陽登', shortName: '藤井陽登', pos: 'GK', youth: false, injured: false },
-
-  // DF (14)
-  { id: 2, number: 2, name: '安西幸輝', shortName: '安西幸輝', pos: 'DF', youth: false, injured: false },
-  { id: 3, number: 3, name: 'キム・テヒョン', shortName: 'キム・テヒョン', pos: 'DF', youth: false, injured: false },
-  { id: 4, number: 4, name: '千田海人', shortName: '千田海人', pos: 'DF', youth: false, injured: false },
-  { id: 5, number: 5, name: '関川郁万', shortName: '関川郁万', pos: 'DF', youth: false, injured: false },
-  { id: 7, number: 7, name: '小川諒也', shortName: '小川諒也', pos: 'DF', youth: false, injured: false },
-  { id: 19, number: 19, name: '大森渚生', shortName: '大森渚生', pos: 'DF', youth: false, injured: false },
-  { id: 23, number: 23, name: '津久井佳佑', shortName: '津久井佳佑', pos: 'DF', youth: false, injured: false },
-  { id: 25, number: 25, name: '小池龍太', shortName: '小池龍太', pos: 'DF', youth: false, injured: false },
-  { id: 28, number: 28, name: '大川佑梧', shortName: '大川佑梧', pos: 'DF', youth: true, injured: false },
-  { id: 32, number: 32, name: '松本遥翔', shortName: '松本遥翔', pos: 'DF', youth: false, injured: false },
-  { id: 35, number: 35, name: '元砂晏翔仁ウデンバ', shortName: '元砂ウデンバ', pos: 'DF', youth: false, injured: false },
-  { id: 37, number: 37, name: '広瀬隆斗', shortName: '広瀬隆斗', pos: 'DF', youth: false, injured: false },
-  { id: 45, number: 45, name: '倉橋幸輝', shortName: '倉橋幸輝', pos: 'DF', youth: true, injured: false },
-  { id: 55, number: 55, name: '植田直通', shortName: '植田直通', pos: 'DF', youth: false, injured: false },
-
-  // MF (10)
-  { id: 6, number: 6, name: '三竿健斗', shortName: '三竿健斗', pos: 'MF', youth: false, injured: false },
-  { id: 8, number: 8, name: 'マテウス・ブエノ', shortName: 'ブエノ', pos: 'MF', youth: false, injured: false },
-  { id: 10, number: 10, name: '柴崎岳', shortName: '柴崎岳', pos: 'MF', youth: false, injured: false },
-  { id: 14, number: 14, name: '樋口雄太', shortName: '樋口雄太', pos: 'MF', youth: false, injured: false },
-  { id: 24, number: 24, name: '林晴己', shortName: '林晴己', pos: 'MF', youth: false, injured: false },
-  { id: 27, number: 27, name: '松村優太', shortName: '松村優太', pos: 'MF', youth: false, injured: false },
-  { id: 42, number: 42, name: '大貫琉偉', shortName: '大貫琉偉', pos: 'MF', youth: true, injured: false },
-  { id: 43, number: 43, name: '福岡勇和', shortName: '福岡勇和', pos: 'MF', youth: true, injured: false },
-  { id: 44, number: 44, name: '平島大悟', shortName: '平島大悟', pos: 'MF', youth: true, injured: false },
-  { id: 46, number: 46, name: '岩土そら', shortName: '岩土そら', pos: 'MF', youth: true, injured: false },
-
-  // FW (10)
-  { id: 9, number: 9, name: 'レオ・セアラ', shortName: 'レオ', pos: 'FW', youth: false, injured: false },
-  { id: 11, number: 11, name: '田川亨介', shortName: '田川亨介', pos: 'FW', youth: false, injured: false },
-  { id: 17, number: 17, name: 'エウベル', shortName: 'エウベル', pos: 'FW', youth: false, injured: false },
-  { id: 18, number: 18, name: 'ヤン・マテウス', shortName: 'ヤン・マテウス', pos: 'FW', youth: false, injured: false },
-  { id: 30, number: 30, name: '吉田湊海', shortName: '吉田湊海', pos: 'FW', youth: false, injured: false },
-  { id: 34, number: 34, name: '徳田誉', shortName: '徳田誉', pos: 'FW', youth: false, injured: false },
-  { id: 40, number: 40, name: '鈴木優磨', shortName: '鈴木優磨', pos: 'FW', youth: false, injured: false },
-  { id: 47, number: 47, name: '高木瑛人', shortName: '高木瑛人', pos: 'FW', youth: true, injured: false },
-  { id: 48, number: 48, name: '滝澤周生', shortName: '滝澤周生', pos: 'FW', youth: true, injured: false },
-  { id: 77, number: 77, name: 'チャヴリッチ', shortName: 'チャヴリッチ', pos: 'FW', youth: false, injured: false }
-];
-
-const FORMATIONS = {
-  '4-4-2': [
-    { role: 'GK', x: 50, y: 87 },
-    { role: 'LB', x: 16, y: 69 },
-    { role: 'LCB', x: 38, y: 71 },
-    { role: 'RCB', x: 62, y: 71 },
-    { role: 'RB', x: 84, y: 69 },
-    { role: 'LSH', x: 16, y: 44 },
-    { role: 'LCH', x: 38, y: 48 },
-    { role: 'RCH', x: 62, y: 48 },
-    { role: 'RSH', x: 84, y: 44 },
-    { role: 'LS', x: 36, y: 20 },
-    { role: 'RS', x: 64, y: 20 }
-  ],
-  '4-2-3-1': [
-    { role: 'GK', x: 50, y: 87 },
-    { role: 'LB', x: 16, y: 70 },
-    { role: 'LCB', x: 38, y: 72 },
-    { role: 'RCB', x: 62, y: 72 },
-    { role: 'RB', x: 84, y: 70 },
-    { role: 'LDM', x: 36, y: 54 },
-    { role: 'RDM', x: 64, y: 54 },
-    { role: 'LOH', x: 20, y: 35 },
-    { role: 'OMF', x: 50, y: 33 },
-    { role: 'ROH', x: 80, y: 35 },
-    { role: 'ST', x: 50, y: 17 }
-  ],
-  '4-3-3': [
-    { role: 'GK', x: 50, y: 87 },
-    { role: 'LB', x: 16, y: 70 },
-    { role: 'LCB', x: 38, y: 72 },
-    { role: 'RCB', x: 62, y: 72 },
-    { role: 'RB', x: 84, y: 70 },
-    { role: 'LCM', x: 28, y: 50 },
-    { role: 'CDM', x: 50, y: 55 },
-    { role: 'RCM', x: 72, y: 50 },
-    { role: 'LW', x: 20, y: 24 },
-    { role: 'ST', x: 50, y: 18 },
-    { role: 'RW', x: 80, y: 24 }
-  ],
-  '3-4-2-1': [
-    { role: 'GK', x: 50, y: 87 },
-    { role: 'LCB', x: 24, y: 71 },
-    { role: 'CB', x: 50, y: 73 },
-    { role: 'RCB', x: 76, y: 71 },
-    { role: 'LWB', x: 15, y: 47 },
-    { role: 'LCM', x: 38, y: 51 },
-    { role: 'RCM', x: 62, y: 51 },
-    { role: 'RWB', x: 85, y: 47 },
-    { role: 'LST', x: 35, y: 30 },
-    { role: 'RST', x: 65, y: 30 },
-    { role: 'ST', x: 50, y: 16 }
-  ]
-};
-
-const DEFAULT_XI_IDS = [1, 7, 5, 55, 23, 17, 8, 6, 27, 40, 9];
-const DEFAULT_BENCH_IDS = [21, 2, 25, 10, 14, 18, 11, 77, 19];
-
-let state = {
-  matchTitle: '明治安田J1リーグ 予想スタメン',
-  matchMemo: '勝利あるのみ！#antlers',
-  formation: '4-4-2',
-  startingXI: [...DEFAULT_XI_IDS],
-  bench: [...DEFAULT_BENCH_IDS],
-  players: JSON.parse(JSON.stringify(INITIAL_PLAYERS)),
-  selectedSlot: { type: 'xi', index: 0 },
-  posFilter: 'ALL',
-  history: []
-};
-
-function getShortName(playerOrName) {
-  if (!playerOrName) return '';
-  if (typeof playerOrName === 'string') return playerOrName;
-  return playerOrName.shortName || playerOrName.name || '';
-}
-
-function getSlotLabel(slot) {
-  if (!slot) return '';
-  if (slot.type === 'xi') {
-    const role = (FORMATIONS[state.formation] || FORMATIONS['4-4-2'])[slot.index]?.role || '';
-    return `先発 ${slot.index + 1} (${role})`;
-  }
-  return `ベンチ ${slot.index + 1}`;
-}
-
-function saveState() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      matchTitle: state.matchTitle,
-      matchMemo: state.matchMemo,
-      formation: state.formation,
-      startingXI: state.startingXI,
-      bench: state.bench,
-      players: state.players
-    }));
-  } catch (e) {}
-}
-
-function saveHistoryStorage() {
-  try {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(state.history.slice(0, MAX_HISTORY)));
-  } catch (e) {}
-}
-
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed.matchTitle !== undefined) state.matchTitle = parsed.matchTitle;
-      if (parsed.matchMemo !== undefined) state.matchMemo = parsed.matchMemo;
-      if (parsed.formation && FORMATIONS[parsed.formation]) state.formation = parsed.formation;
-      if (Array.isArray(parsed.startingXI) && parsed.startingXI.length === 11) state.startingXI = parsed.startingXI;
-      if (Array.isArray(parsed.bench)) state.bench = parsed.bench;
-      if (Array.isArray(parsed.players) && parsed.players.length > 0) {
-        const validIds = new Set(INITIAL_PLAYERS.map(p => p.id));
-        const injuredIds = new Set(parsed.players.filter(p => p.injured).map(p => p.id));
-        state.players = JSON.parse(JSON.stringify(INITIAL_PLAYERS)).map(p => ({
-          ...p,
-          injured: injuredIds.has(p.id)
-        }));
-        state.startingXI = state.startingXI.map(id => (id && validIds.has(id) ? id : null));
-        state.bench = state.bench.map(id => (id && validIds.has(id) ? id : null));
-      }
-    }
-    const hRaw = localStorage.getItem(HISTORY_KEY);
-    if (hRaw) {
-      const hParsed = JSON.parse(hRaw);
-      if (Array.isArray(hParsed)) state.history = hParsed.slice(0, MAX_HISTORY);
-    }
-  } catch (e) {}
-}
-
-function resetToDefault() {
-  state.matchTitle = '明治安田J1リーグ 予想スタメン';
-  state.matchMemo = '勝利あるのみ！#antlers';
-  state.formation = '4-4-2';
-  state.startingXI = [...DEFAULT_XI_IDS];
-  state.bench = [...DEFAULT_BENCH_IDS];
-  state.players = JSON.parse(JSON.stringify(INITIAL_PLAYERS));
-  state.selectedSlot = { type: 'xi', index: 0 };
-  document.getElementById('match-title').value = state.matchTitle;
-  document.getElementById('match-memo').value = state.matchMemo;
-  saveState();
-  renderAll();
-  showToast('初期スタメンに戻しました');
-}
-
-function updateMeta() {
-  state.matchTitle = document.getElementById('match-title')?.value || '';
-  state.matchMemo = document.getElementById('match-memo')?.value || '';
-  saveState();
-}
-
-function changeFormation(form) {
-  state.formation = form;
-  saveState();
-  renderAll();
-}
-
-function setPosFilter(pos) {
-  state.posFilter = pos;
-  renderPosFilterButtons();
-  renderRoster();
-}
-
-function onSlotClick(type, index) {
-  state.selectedSlot = { type, index };
-  renderSelectedTargetBadge();
-  renderPitch();
-  renderBench();
-  openPlayerPickerForSlot({ type, index });
-}
-
-function openPlayerPickerForSlot(slot) {
-  state.selectedSlot = slot || { type: 'xi', index: 0 };
-  const label = getSlotLabel(state.selectedSlot);
-  document.getElementById('picker-modal-title').textContent = '選手を選択';
-  document.getElementById('picker-modal-sub').textContent = `対象枠: ${label}`;
-  renderPosFilterButtons();
-  renderRoster();
-
-  const modal = document.getElementById('player-picker-modal');
-  modal.classList.remove('hidden');
-  modal.classList.add('flex');
-}
-
-function openPlayerPickerForSelected() {
-  openPlayerPickerForSlot(state.selectedSlot || { type: 'xi', index: 0 });
-}
-
-function closePlayerPicker() {
-  const modal = document.getElementById('player-picker-modal');
-  modal.classList.add('hidden');
-  modal.classList.remove('flex');
-}
-
-function clearSelectedSlot() {
-  const { type, index } = state.selectedSlot;
-  if (type === 'xi') state.startingXI[index] = null;
-  else state.bench[index] = null;
-  saveState();
-  renderAll();
-  closePlayerPicker();
-  showToast('枠を空にしました');
-}
-
-function assignPlayerToSelectedSlot(playerId) {
-  const player = state.players.find(p => p.id === playerId);
-  if (!player) return;
-  if (player.injured) {
-    showToast(`${getShortName(player)} は負傷離脱中のため選択できません`);
-    return;
-  }
-
-  const { type, index } = state.selectedSlot;
-  const xiIdx = state.startingXI.indexOf(playerId);
-  const benchIdx = state.bench.indexOf(playerId);
-
-  if (type === 'xi') {
-    const prevId = state.startingXI[index];
-    if (xiIdx !== -1 && xiIdx !== index) state.startingXI[xiIdx] = prevId || null;
-    else if (benchIdx !== -1) state.bench[benchIdx] = prevId || null;
-    state.startingXI[index] = playerId;
-  } else {
-    const prevId = state.bench[index];
-    if (benchIdx !== -1 && benchIdx !== index) state.bench[benchIdx] = prevId || null;
-    else if (xiIdx !== -1) state.startingXI[xiIdx] = prevId || null;
-    state.bench[index] = playerId;
-  }
-
-  saveState();
-  renderAll();
-  closePlayerPicker();
-  showToast(`#${player.number} ${getShortName(player)} を配置しました`);
-}
-
-function toggleInjured(playerId) {
-  const player = state.players.find(p => p.id === playerId);
-  if (!player) return;
-  player.injured = !player.injured;
-
-  if (player.injured) {
-    state.startingXI = state.startingXI.map(id => (id === playerId ? null : id));
-    state.bench = state.bench.map(id => (id === playerId ? null : id));
-    showToast(`${getShortName(player)} を負傷離脱中に設定しました`);
-  } else {
-    showToast(`${getShortName(player)} のけが状態を解除しました`);
-  }
-
-  saveState();
-  renderAll();
-}
-
-function saveSnapshotToHistory() {
-  saveState();
-  const title = (document.getElementById('match-title')?.value || '予想スタメン').trim() || '予想スタメン';
-  const memo = (document.getElementById('match-memo')?.value || '').trim();
-  const now = new Date();
-  const timeStr = `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-  const item = {
-    id: Date.now(),
-    savedAt: timeStr,
-    matchTitle: title,
-    matchMemo: memo,
-    formation: state.formation,
-    startingXI: [...state.startingXI],
-    bench: [...state.bench]
+  var FORMATIONS = {
+    '4-2-3-1': [
+      { pos: 'FW', label: 'ST' },
+      { pos: 'MF', label: 'LSH' },
+      { pos: 'MF', label: 'OMF' },
+      { pos: 'MF', label: 'RSH' },
+      { pos: 'MF', label: 'LDM' },
+      { pos: 'MF', label: 'RDM' },
+      { pos: 'DF', label: 'LB' },
+      { pos: 'DF', label: 'LCB' },
+      { pos: 'DF', label: 'RCB' },
+      { pos: 'DF', label: 'RB' },
+      { pos: 'GK', label: 'GK' }
+    ],
+    '4-4-2': [
+      { pos: 'FW', label: 'FW' },
+      { pos: 'FW', label: 'FW' },
+      { pos: 'MF', label: 'LM' },
+      { pos: 'MF', label: 'CM' },
+      { pos: 'MF', label: 'CM' },
+      { pos: 'MF', label: 'RM' },
+      { pos: 'DF', label: 'LB' },
+      { pos: 'DF', label: 'CB' },
+      { pos: 'DF', label: 'CB' },
+      { pos: 'DF', label: 'RB' },
+      { pos: 'GK', label: 'GK' }
+    ],
+    '4-3-3': [
+      { pos: 'FW', label: 'LW' },
+      { pos: 'FW', label: 'ST' },
+      { pos: 'FW', label: 'RW' },
+      { pos: 'MF', label: 'LCM' },
+      { pos: 'MF', label: 'CDM' },
+      { pos: 'MF', label: 'RCM' },
+      { pos: 'DF', label: 'LB' },
+      { pos: 'DF', label: 'LCB' },
+      { pos: 'DF', label: 'RCB' },
+      { pos: 'DF', label: 'RB' },
+      { pos: 'GK', label: 'GK' }
+    ],
+    '3-4-2-1': [
+      { pos: 'FW', label: 'ST' },
+      { pos: 'MF', label: 'Lシャドウ' },
+      { pos: 'MF', label: 'Rシャドウ' },
+      { pos: 'MF', label: 'LWB' },
+      { pos: 'MF', label: 'LCM' },
+      { pos: 'MF', label: 'RCM' },
+      { pos: 'MF', label: 'RWB' },
+      { pos: 'DF', label: 'LCB' },
+      { pos: 'DF', label: 'CB' },
+      { pos: 'DF', label: 'RCB' },
+      { pos: 'GK', label: 'GK' }
+    ]
   };
 
-  state.history = [item, ...state.history].slice(0, MAX_HISTORY);
-  saveHistoryStorage();
-  renderHistory();
-  showToast('予想履歴に保存しました');
-}
+  var PLAYERS = [
+    { number: 1, name: '早川友基', pos: 'GK' },
+    { number: 21, name: '山田大樹', pos: 'GK' },
+    { number: 29, name: '梶川裕嗣', pos: 'GK' },
+    { number: 31, name: '藤井陽登', pos: 'GK' },
+    { number: 2, name: '安西幸輝', pos: 'DF' },
+    { number: 3, name: 'キム・テヒョン', pos: 'DF' },
+    { number: 4, name: '千田海人', pos: 'DF' },
+    { number: 5, name: '関川郁万', pos: 'DF' },
+    { number: 7, name: '小川諒也', pos: 'DF' },
+    { number: 19, name: '大森渚生', pos: 'DF' },
+    { number: 23, name: '津久井佳佑', pos: 'DF' },
+    { number: 25, name: '小池龍太', pos: 'DF' },
+    { number: 28, name: '大川佑梧', pos: 'DF' },
+    { number: 32, name: '松本遥翔', pos: 'DF' },
+    { number: 35, name: '元砂晏翔仁ウデンバ', pos: 'DF' },
+    { number: 37, name: '広瀬隆斗', pos: 'DF' },
+    { number: 45, name: '倉橋幸輝', pos: 'DF' },
+    { number: 55, name: '植田直通', pos: 'DF' },
+    { number: 6, name: '三竿健斗', pos: 'MF' },
+    { number: 8, name: 'マテウス・ブエノ', pos: 'MF' },
+    { number: 10, name: '柴崎岳', pos: 'MF' },
+    { number: 14, name: '樋口雄太', pos: 'MF' },
+    { number: 24, name: '林晴己', pos: 'MF' },
+    { number: 27, name: '松村優太', pos: 'MF' },
+    { number: 42, name: '大貫琉偉', pos: 'MF' },
+    { number: 43, name: '福岡勇和', pos: 'MF' },
+    { number: 44, name: '平島大悟', pos: 'MF' },
+    { number: 46, name: '岩土そら', pos: 'MF' },
+    { number: 9, name: 'レオ・セアラ', pos: 'FW' },
+    { number: 11, name: '田川亨介', pos: 'FW' },
+    { number: 17, name: 'エウベル', pos: 'FW' },
+    { number: 18, name: 'ヤン・マテウス', pos: 'FW' },
+    { number: 30, name: '吉田湊海', pos: 'FW' },
+    { number: 34, name: '徳田誉', pos: 'FW' },
+    { number: 40, name: '鈴木優磨', pos: 'FW' },
+    { number: 47, name: '高木瑛人', pos: 'FW' },
+    { number: 48, name: '滝澤周生', pos: 'FW' },
+    { number: 77, name: 'チャヴリッチ', pos: 'FW' }
+  ];
 
-function loadHistoryItem(id) {
-  const item = state.history.find(h => h.id === id);
-  if (!item) return;
+  var state = {
+    opponent: '清水エスパルス',
+    matchLabel: '第15節 予想スタメン',
+    formation: '4-2-3-1',
+    comment: '勝利の立役者になってほしい！🦌🔥',
+    slots: Array(11).fill(null),
+    activeSlotIdx: null
+  };
 
-  state.matchTitle = item.matchTitle;
-  state.matchMemo = item.matchMemo;
-  state.formation = FORMATIONS[item.formation] ? item.formation : '4-4-2';
-  state.startingXI = Array.isArray(item.startingXI) ? [...item.startingXI] : [...DEFAULT_XI_IDS];
-  state.bench = Array.isArray(item.bench) ? [...item.bench] : [...DEFAULT_BENCH_IDS];
-
-  document.getElementById('match-title').value = state.matchTitle;
-  document.getElementById('match-memo').value = state.matchMemo;
-  saveState();
-  renderAll();
-  showToast(`「${item.matchTitle}」を呼び出しました`);
-}
-
-function deleteHistoryItem(id) {
-  state.history = state.history.filter(h => h.id !== id);
-  saveHistoryStorage();
-  renderHistory();
-  showToast('履歴を削除しました');
-}
-
-function renderHistory() {
-  const container = document.getElementById('history-list');
-  if (!container) return;
-
-  if (!state.history || state.history.length === 0) {
-    container.innerHTML = '<p class="text-xs text-slate-500">保存された予想はまだありません。「今の予想を保存」から最大3件まで残せます。</p>';
-    return;
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        opponent: state.opponent,
+        matchLabel: state.matchLabel,
+        formation: state.formation,
+        comment: state.comment,
+        slots: state.slots
+      }));
+    } catch (e) {}
   }
 
-  container.innerHTML = state.history.map(item => `
-    <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-950/85 border border-slate-800">
-      <button type="button" onclick="loadHistoryItem(${item.id})" class="text-left flex-1 min-w-0">
-        <div class="flex items-center gap-1.5">
-          <span class="px-1.5 py-0.5 rounded bg-red-800 text-[10px] font-black text-white shrink-0">${item.formation}</span>
-          <span class="text-xs font-black text-white truncate">${item.matchTitle}</span>
-        </div>
-        <div class="text-[10px] text-slate-400 mt-0.5 truncate">${item.savedAt}${item.matchMemo ? ' · ' + item.matchMemo : ''}</div>
-      </button>
-      <div class="flex items-center gap-1.5 shrink-0">
-        <button type="button" onclick="loadHistoryItem(${item.id})" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700">
-          読込
-        </button>
-        <button type="button" onclick="deleteHistoryItem(${item.id})" class="px-2 py-1 rounded-lg text-[11px] font-bold bg-slate-900 hover:bg-rose-950 text-slate-400 hover:text-rose-300 border border-slate-800">
-          削除
-        </button>
-      </div>
-    </div>
-  `).join('');
-}
+  function loadState() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      var p = JSON.parse(raw);
+      if (p.opponent !== undefined) state.opponent = p.opponent;
+      if (p.matchLabel !== undefined) state.matchLabel = p.matchLabel;
+      if (p.formation && FORMATIONS[p.formation]) state.formation = p.formation;
+      if (p.comment !== undefined) state.comment = p.comment;
+      if (Array.isArray(p.slots) && p.slots.length === 11) state.slots = p.slots;
+    } catch (e) {}
+  }
 
-function renderFormationButtons() {
-  document.querySelectorAll('.form-btn').forEach(btn => {
-    const active = btn.dataset.form === state.formation;
-    btn.className = `form-btn px-2.5 py-1 rounded-lg text-xs font-black border transition ${
-      active
-        ? 'bg-red-700 text-white border-amber-400 shadow'
-        : 'bg-slate-950 text-slate-300 border-slate-700 hover:border-slate-500'
-    }`;
-  });
-  const badge = document.getElementById('current-form-badge');
-  if (badge) badge.textContent = state.formation;
-}
+  function syncInputs() {
+    document.getElementById('opp-input').value = state.opponent;
+    document.getElementById('match-label-input').value = state.matchLabel;
+    document.getElementById('comment-input').value = state.comment;
+  }
 
-function renderPosFilterButtons() {
-  document.querySelectorAll('.pos-filter-btn').forEach(btn => {
-    const active = btn.dataset.pos === state.posFilter;
-    btn.className = `pos-filter-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition ${
-      active
-        ? 'bg-amber-500 text-slate-950 border-amber-300'
-        : 'bg-slate-950 text-slate-300 border-slate-700 hover:border-slate-500'
-    }`;
-  });
-}
-
-function renderPitch() {
-  const container = document.getElementById('pitch-slots');
-  if (!container) return;
-  const coords = FORMATIONS[state.formation] || FORMATIONS['4-4-2'];
-  container.innerHTML = '';
-
-  coords.forEach((pos, idx) => {
-    const player = state.players.find(p => p.id === state.startingXI[idx]);
-    const isSelected = state.selectedSlot.type === 'xi' && state.selectedSlot.index === idx;
-    const isGK = pos.role === 'GK';
-
-    const el = document.createElement('button');
-    el.type = 'button';
-    el.onclick = () => onSlotClick('xi', idx);
-    el.style.left = `${pos.x}%`;
-    el.style.top = `${pos.y}%`;
-    el.className = `slot-btn absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center focus:outline-none ${
-      isSelected ? 'z-20 scale-105' : 'z-10'
-    }`;
-
-    if (player) {
-      el.innerHTML = `
-        <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex flex-col items-center justify-center border-2 shadow-lg transition ${
-          isGK
-            ? 'bg-amber-600 border-white text-slate-950'
-            : 'antlers-red border-amber-400 text-white'
-        } ${isSelected ? 'ring-4 ring-amber-300/85' : ''}">
-          <span class="text-[8px] font-black leading-none ${isGK ? 'text-amber-950' : 'text-amber-200'}">${pos.role}</span>
-          <span class="font-num text-sm sm:text-base font-black leading-tight">${player.number}</span>
-        </div>
-        <span class="mt-1 px-2 py-0.5 rounded bg-slate-950/95 border border-amber-400/75 text-[10px] sm:text-[11px] font-black text-white shadow whitespace-nowrap">
-          ${getShortName(player)}
-        </span>
-      `;
-    } else {
-      el.innerHTML = `
-        <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center bg-slate-950/75 border-2 border-dashed border-white/70 text-[10px] font-black text-white/90 ${
-          isSelected ? 'ring-4 ring-amber-300/85 border-amber-300' : ''
-        }">
-          ${pos.role}
-        </div>
-        <span class="mt-1 px-1.5 py-0.5 rounded bg-slate-950/80 text-[10px] font-bold text-slate-300">未選択</span>
-      `;
+  function getPitchRows() {
+    if (state.formation === '4-2-3-1') {
+      return [
+        [0],
+        [1, 2, 3],
+        [4, 5],
+        [6, 7, 8, 9],
+        [10]
+      ];
     }
-
-    container.appendChild(el);
-  });
-
-  const count = state.startingXI.filter(Boolean).length;
-  const countEl = document.getElementById('xi-count');
-  if (countEl) countEl.textContent = `${count} / 11`;
-}
-
-function renderBench() {
-  const container = document.getElementById('bench-slots');
-  if (!container) return;
-  container.innerHTML = '';
-
-  for (let i = 0; i < 9; i++) {
-    const pid = state.bench[i];
-    const player = state.players.find(p => p.id === pid);
-    const isSelected = state.selectedSlot.type === 'bench' && state.selectedSlot.index === i;
-
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.onclick = () => onSlotClick('bench', i);
-    btn.className = `slot-btn p-2 rounded-xl border text-left flex items-center gap-2 transition ${
-      isSelected
-        ? 'bg-slate-800 border-amber-400 ring-2 ring-amber-400/50'
-        : 'bg-slate-950/80 border-slate-800 hover:border-slate-600'
-    }`;
-
-    if (player) {
-      btn.innerHTML = `
-        <span class="w-6 h-6 rounded-full antlers-red text-white font-num text-xs font-black flex items-center justify-center shrink-0">${player.number}</span>
-        <span class="text-xs font-bold text-white truncate">${getShortName(player)}</span>
-      `;
-    } else {
-      btn.innerHTML = `
-        <span class="w-6 h-6 rounded-full bg-slate-800 text-slate-500 font-num text-xs font-bold flex items-center justify-center shrink-0">-</span>
-        <span class="text-xs font-bold text-slate-500 truncate">空き枠 ${i + 1}</span>
-      `;
+    if (state.formation === '4-4-2') {
+      return [
+        [0, 1],
+        [2, 3, 4, 5],
+        [6, 7, 8, 9],
+        [10]
+      ];
     }
-
-    container.appendChild(btn);
-  }
-}
-
-function renderInjuredList() {
-  const injuredPlayers = state.players.filter(p => p.injured);
-  const section = document.getElementById('injured-section');
-  const list = document.getElementById('injured-list');
-  if (!section || !list) return;
-
-  if (injuredPlayers.length === 0) {
-    section.classList.add('hidden');
-    list.innerHTML = '';
-    return;
-  }
-
-  section.classList.remove('hidden');
-  list.innerHTML = injuredPlayers.map(p => `
-    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-950/80 border border-rose-500/50 text-xs font-bold text-rose-200">
-      <span class="font-num">#${p.number}</span> ${getShortName(p)}
-      <button type="button" onclick="toggleInjured(${p.id})" class="text-[10px] underline text-rose-300 hover:text-white ml-1">解除</button>
-    </span>
-  `).join('');
-}
-
-function renderSelectedTargetBadge() {
-  const badge = document.getElementById('selected-target-badge');
-  if (!badge) return;
-  badge.textContent = getSlotLabel(state.selectedSlot);
-}
-
-function renderRoster() {
-  const list = document.getElementById('roster-list');
-  if (!list) return;
-  const q = (document.getElementById('player-search')?.value || '').trim().toLowerCase();
-
-  const usedXI = new Set(state.startingXI.filter(Boolean));
-  const usedBench = new Set(state.bench.filter(Boolean));
-
-  const filtered = state.players.filter(p => {
-    if (state.posFilter !== 'ALL' && p.pos !== state.posFilter) return false;
-    if (!q) return true;
-    return String(p.number).includes(q) || p.name.toLowerCase().includes(q) || (p.shortName || '').toLowerCase().includes(q);
-  });
-
-  list.innerHTML = filtered.map(p => {
-    const inXI = usedXI.has(p.id);
-    const inBench = usedBench.has(p.id);
-    const youthBadge = p.youth
-      ? `<span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-400/30">2種</span>`
-      : '';
-    const statusBadge = p.injured
-      ? `<span class="text-[10px] font-black px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">負傷</span>`
-      : inXI
-        ? `<span class="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/40">先発</span>`
-        : inBench
-          ? `<span class="text-[10px] font-black px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/40">SUB</span>`
-          : '';
-
-    return `
-      <div class="flex items-center justify-between gap-2 p-2 rounded-xl border ${
-        p.injured
-          ? 'bg-rose-950/25 border-rose-900/50 opacity-70'
-          : 'bg-slate-950/80 border-slate-800 hover:border-slate-600'
-      }">
-        <button type="button" onclick="assignPlayerToSelectedSlot(${p.id})" class="flex items-center gap-2 text-left flex-1 min-w-0">
-          <span class="w-7 h-7 rounded-lg antlers-red text-white font-num text-xs font-black flex items-center justify-center shrink-0">${p.number}</span>
-          <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 shrink-0">${p.pos}</span>
-          <span class="text-xs font-bold text-white truncate">${p.name}</span>
-          ${youthBadge}
-          ${statusBadge}
-        </button>
-        <button type="button" onclick="toggleInjured(${p.id})" class="px-2 py-1 rounded-lg text-[11px] font-bold border shrink-0 transition ${
-          p.injured
-            ? 'bg-rose-600 text-white border-rose-400'
-            : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-rose-300 hover:border-rose-500/50'
-        }">
-          けが
-        </button>
-      </div>
-    `;
-  }).join('');
-}
-
-function renderAll() {
-  renderFormationButtons();
-  renderPosFilterButtons();
-  renderSelectedTargetBadge();
-  renderPitch();
-  renderBench();
-  renderHistory();
-  renderInjuredList();
-  renderRoster();
-}
-
-function roundRect(ctx, x, y, w, h, r) {
-  const radius = Math.min(r, w / 2, h / 2);
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.arcTo(x + w, y, x + w, y + h, radius);
-  ctx.arcTo(x + w, y + h, x, y + h, radius);
-  ctx.arcTo(x, y + h, x, y, radius);
-  ctx.arcTo(x, y, x + w, y, radius);
-  ctx.closePath();
-}
-
-async function createLineupCanvas() {
-  try {
-    if (document.fonts && document.fonts.ready) {
-      await Promise.race([
-        document.fonts.ready,
-        new Promise(resolve => setTimeout(resolve, 1200))
-      ]);
+    if (state.formation === '4-3-3') {
+      return [
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8, 9],
+        [10]
+      ];
     }
-  } catch (e) {}
-
-  const coords = FORMATIONS[state.formation] || FORMATIONS['4-4-2'];
-  const titleText = (document.getElementById('match-title')?.value || '明治安田J1リーグ 予想スタメン').trim();
-  const memoText = (document.getElementById('match-memo')?.value || '').trim();
-  const assignedCount = state.startingXI.filter(Boolean).length;
-
-  const scale = 2;
-  const width = 480;
-  const pitchX = 16;
-  const pitchY = 88;
-  const pitchW = width - pitchX * 2;
-  const pitchH = 528;
-
-  const benchPlayers = state.bench
-    .map(pid => state.players.find(p => p.id === pid))
-    .filter(Boolean);
-
-  const benchRows = Math.max(1, Math.ceil(Math.max(benchPlayers.length, 9) / 3));
-  const benchBoxY = pitchY + pitchH + 14;
-  const benchBoxH = 44 + benchRows * 38;
-
-  const footerSpace = 28;
-  const totalHeight = benchBoxY + benchBoxH + footerSpace + 12;
-
-  const canvas = document.createElement('canvas');
-  canvas.width = width * scale;
-  canvas.height = totalHeight * scale;
-  const ctx = canvas.getContext('2d');
-  ctx.scale(scale, scale);
-
-  ctx.fillStyle = '#0f172a';
-  ctx.fillRect(0, 0, width, totalHeight);
-
-  roundRect(ctx, 16, 14, width - 32, 64, 12);
-  ctx.fillStyle = '#1e293b';
-  ctx.fill();
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = '#334155';
-  ctx.stroke();
-
-  ctx.fillStyle = '#ffffff';
-  ctx.font = '900 15px "Noto Sans JP", "Inter", sans-serif';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(titleText, 28, 34);
-
-  ctx.fillStyle = '#9e0b0f';
-  roundRect(ctx, 28, 47, 56, 20, 4);
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(212, 175, 55, 0.7)';
-  ctx.stroke();
-  ctx.fillStyle = '#ffffff';
-  ctx.font = '800 11px "Inter", sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(state.formation, 56, 57);
-
-  ctx.fillStyle = '#fde68a';
-  ctx.font = '700 11px "Noto Sans JP", "Inter", sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText(memoText, 92, 57);
-
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '700 9px "Inter", sans-serif';
-  ctx.textAlign = 'right';
-  ctx.fillText('STARTING XI', width - 28, 31);
-  ctx.fillStyle = '#d4af37';
-  ctx.font = '900 14px "Inter", sans-serif';
-  ctx.fillText(`${assignedCount} / 11`, width - 28, 52);
-
-  ctx.save();
-  roundRect(ctx, pitchX, pitchY, pitchW, pitchH, 12);
-  ctx.clip();
-
-  const stripeCount = 10;
-  const stripeH = pitchH / stripeCount;
-  for (let i = 0; i < stripeCount; i++) {
-    ctx.fillStyle = i % 2 === 0 ? '#1b6332' : '#207039';
-    ctx.fillRect(pitchX, pitchY + i * stripeH, pitchW, stripeH + 1);
+    return [
+      [0],
+      [1, 2],
+      [3, 4, 5, 6],
+      [7, 8, 9],
+      [10]
+    ];
   }
 
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.72)';
-  ctx.lineWidth = 2;
-  const pad = 12;
-  const innerX = pitchX + pad;
-  const innerY = pitchY + pad;
-  const innerW = pitchW - pad * 2;
-  const innerH = pitchH - pad * 2;
-
-  ctx.strokeRect(innerX, innerY, innerW, innerH);
-
-  const midY = innerY + innerH / 2;
-  const midX = innerX + innerW / 2;
-  ctx.beginPath();
-  ctx.moveTo(innerX, midY);
-  ctx.lineTo(innerX + innerW, midY);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.arc(midX, midY, 52, 0, Math.PI * 2);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.arc(midX, midY, 3.5, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-  ctx.fill();
-
-  const paW = innerW * 0.54;
-  const paH = innerH * 0.155;
-  const paX = midX - paW / 2;
-  ctx.strokeRect(paX, innerY, paW, paH);
-
-  const gaW = innerW * 0.28;
-  const gaH = innerH * 0.058;
-  ctx.strokeRect(midX - gaW / 2, innerY, gaW, gaH);
-
-  ctx.strokeRect(paX, innerY + innerH - paH, paW, paH);
-  ctx.strokeRect(midX - gaW / 2, innerY + innerH - gaH, gaW, gaH);
-
-  coords.forEach((pos, idx) => {
-    const cx = pitchX + (pos.x / 100) * pitchW;
-    const cy = pitchY + (pos.y / 100) * pitchH;
-    const player = state.players.find(p => p.id === state.startingXI[idx]);
-    const isGK = pos.role === 'GK';
-
-    const r = 22;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-
-    if (player) {
-      ctx.fillStyle = isGK ? '#d97706' : '#9e0b0f';
-      ctx.fill();
-      ctx.lineWidth = 2.5;
-      ctx.strokeStyle = isGK ? '#ffffff' : '#d4af37';
-      ctx.stroke();
-
-      ctx.fillStyle = isGK ? '#fffbeb' : '#fde68a';
-      ctx.font = '800 8px "Inter", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(pos.role, cx, cy - 8);
-
-      ctx.fillStyle = isGK ? '#0f172a' : '#ffffff';
-      ctx.font = '900 16px "Inter", sans-serif';
-      ctx.fillText(String(player.number), cx, cy + 5);
-
-      const shortName = getShortName(player);
-      ctx.font = '900 11px "Noto Sans JP", "Inter", sans-serif';
-      const labelW = Math.max(44, ctx.measureText(shortName).width + 14);
-      const labelH = 20;
-      const labelX = cx - labelW / 2;
-      const labelY = cy + r + 4;
-
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
-      roundRect(ctx, labelX, labelY, labelW, labelH, 5);
-      ctx.fill();
-      ctx.lineWidth = 1.2;
-      ctx.strokeStyle = 'rgba(212, 175, 55, 0.75)';
-      ctx.stroke();
-
-      ctx.fillStyle = '#ffffff';
-      ctx.fillText(shortName, cx, labelY + labelH / 2 + 0.5);
-    } else {
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.72)';
-      ctx.fill();
-      ctx.setLineDash([4, 3]);
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-      ctx.font = '800 10px "Inter", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(pos.role, cx, cy);
-    }
-  });
-
-  ctx.restore();
-
-  roundRect(ctx, pitchX, pitchY, pitchW, pitchH, 12);
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
-  ctx.stroke();
-
-  roundRect(ctx, 16, benchBoxY, width - 32, benchBoxH, 12);
-  ctx.fillStyle = '#111827';
-  ctx.fill();
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = '#334155';
-  ctx.stroke();
-
-  ctx.fillStyle = '#9e0b0f';
-  ctx.fillRect(28, benchBoxY + 12, 4, 14);
-  ctx.fillStyle = '#ffffff';
-  ctx.font = '900 12px "Noto Sans JP", "Inter", sans-serif';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('ベンチメンバー (SUBS)', 38, benchBoxY + 19);
-
-  const colW = (width - 56 - 12) / 3;
-  for (let i = 0; i < benchRows * 3; i++) {
-    const rIdx = Math.floor(i / 3);
-    const cIdx = i % 3;
-    const bx = 28 + cIdx * (colW + 6);
-    const by = benchBoxY + 36 + rIdx * 38;
-    const p = benchPlayers[i];
-
-    roundRect(ctx, bx, by, colW, 32, 7);
-    ctx.fillStyle = p ? '#1e293b' : 'rgba(15, 23, 42, 0.6)';
-    ctx.fill();
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = p ? '#475569' : '#334155';
-    ctx.stroke();
-
-    if (p) {
-      ctx.beginPath();
-      ctx.arc(bx + 16, by + 16, 10, 0, Math.PI * 2);
-      ctx.fillStyle = '#9e0b0f';
-      ctx.fill();
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '900 10px "Inter", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(String(p.number), bx + 16, by + 16.5);
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '800 11px "Noto Sans JP", "Inter", sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText(getShortName(p), bx + 31, by + 16.5);
-    } else {
-      ctx.fillStyle = '#64748b';
-      ctx.font = '700 10px "Noto Sans JP", "Inter", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('-', bx + colW / 2, by + 16.5);
-    }
+  function renderButtons() {
+    document.querySelectorAll('[data-action="formation"]').forEach(function (btn) {
+      btn.className = (btn.getAttribute('data-val') === state.formation) ? 'active-red' : '';
+    });
   }
 
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '700 10px "Inter", "Noto Sans JP", sans-serif';
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('Created by @syou0120', width - 18, totalHeight - 14);
+  function renderPitch() {
+    var pitch = document.getElementById('pitch');
+    pitch.innerHTML = '';
+    var defs = FORMATIONS[state.formation] || FORMATIONS['4-2-3-1'];
+    var rows = getPitchRows();
 
-  return canvas;
-}
+    rows.forEach(function (indices) {
+      var rowEl = document.createElement('div');
+      rowEl.className = 'pitch-row';
 
-async function generateShareImage() {
-  saveState();
-  showToast('画像を生成中...');
-  try {
-    const canvas = await createLineupCanvas();
-    const dataUrl = canvas.toDataURL('image/png');
-    document.getElementById('generated-image-preview').src = dataUrl;
-    document.getElementById('download-image-link').href = dataUrl;
+      indices.forEach(function (idx) {
+        var def = defs[idx];
+        var player = state.slots[idx];
 
-    const modal = document.getElementById('share-image-modal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-  } catch (err) {
-    console.error('画像生成エラー:', err);
-    showToast('画像の作成に失敗しました');
-  }
-}
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'slot-btn';
+        btn.setAttribute('data-action', 'open-slot');
+        btn.setAttribute('data-slot-idx', String(idx));
 
-function closeShareModal() {
-  const modal = document.getElementById('share-image-modal');
-  modal.classList.add('hidden');
-  modal.classList.remove('flex');
-}
+        var posSpan = document.createElement('span');
+        posSpan.className = 'slot-pos';
+        posSpan.textContent = def.label;
 
-function shareToX() {
-  saveState();
-  const title = (document.getElementById('match-title')?.value || '予想スタメン').trim();
-  const memo = (document.getElementById('match-memo')?.value || '').trim();
-  const coords = FORMATIONS[state.formation] || FORMATIONS['4-4-2'];
+        var nameSpan = document.createElement('span');
+        if (player) {
+          nameSpan.className = 'slot-name';
+          nameSpan.textContent = '#' + player.number + ' ' + player.name;
+        } else {
+          nameSpan.className = 'slot-name slot-empty';
+          nameSpan.textContent = '+ 選択';
+        }
 
-  const xiLines = state.startingXI.map((pid, idx) => {
-    const role = coords[idx]?.role || '';
-    const p = state.players.find(item => item.id === pid);
-    return p ? `${role}: #${p.number} ${getShortName(p)}` : `${role}: 未定`;
-  });
-
-  const postText = [
-    `【${title}】(${state.formation})`,
-    ...xiLines,
-    memo ? `\n${memo}` : '',
-    `by @syou0120`
-  ].filter(Boolean).join('\n');
-
-  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(postText)}`;
-  window.open(url, '_blank', 'noopener,noreferrer');
-}
-
-async function shareNative() {
-  saveState();
-  const title = (document.getElementById('match-title')?.value || '予想スタメン').trim();
-  const memo = (document.getElementById('match-memo')?.value || '').trim();
-  const shareText = `${title}（${state.formation}）${memo ? ' ' + memo : ''} by @syou0120`;
-
-  showToast('共有用データを準備中...');
-  try {
-    const canvas = await createLineupCanvas();
-    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-    const file = new File([blob], 'kashima_lineup.png', { type: 'image/png' });
-
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({
-        title: title,
-        text: shareText,
-        files: [file]
+        btn.appendChild(posSpan);
+        btn.appendChild(nameSpan);
+        rowEl.appendChild(btn);
       });
-      showToast('共有メニューを開きました');
-    } else {
-      const dataUrl = canvas.toDataURL('image/png');
-      document.getElementById('generated-image-preview').src = dataUrl;
-      document.getElementById('download-image-link').href = dataUrl;
-      const modal = document.getElementById('share-image-modal');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-      showToast('画像を保存してSNSに投稿してください');
+
+      pitch.appendChild(rowEl);
+    });
+  }
+
+  function buildTweetText() {
+    var oppPart = state.opponent ? ' vs ' + state.opponent : '';
+    var labelPart = state.matchLabel ? '（' + state.matchLabel + '）' : '';
+    var head = '鹿島アントラーズ' + oppPart + labelPart + ' [' + state.formation + ']';
+    var lines = [head];
+    if (state.comment && state.comment.trim()) {
+      lines.push(state.comment.trim());
     }
-  } catch (err) {
-    if (err && err.name !== 'AbortError') {
-      console.error('共有エラー:', err);
-      showToast('共有に失敗しました');
+    lines.push('');
+    lines.push('スタメン予想メーカーはこちら👇');
+    lines.push(APP_URL);
+    lines.push('');
+    lines.push('#鹿島アントラーズ #antlers #スタメン予想');
+    return lines.join('\n');
+  }
+
+  function renderTweetPreview() {
+    var text = buildTweetText();
+    document.getElementById('tweet-preview').textContent = text;
+    var link = document.getElementById('x-share-link');
+    link.href = 'https://x.com/intent/tweet?text=' + encodeURIComponent(text);
+  }
+
+  function renderPlayerList() {
+    var q = (document.getElementById('player-search').value || '').trim().toLowerCase();
+    var list = document.getElementById('player-list');
+    list.innerHTML = '';
+
+    PLAYERS.filter(function (p) {
+      if (!q) return true;
+      return String(p.number).indexOf(q) !== -1 || p.name.toLowerCase().indexOf(q) !== -1 || p.pos.toLowerCase().indexOf(q) !== -1;
+    }).forEach(function (p) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'player-item';
+      btn.setAttribute('data-action', 'pick-player');
+      btn.setAttribute('data-number', String(p.number));
+
+      var left = document.createElement('span');
+      left.style.display = 'flex';
+      left.style.alignItems = 'center';
+      left.style.gap = '8px';
+
+      var num = document.createElement('span');
+      num.className = 'num-badge';
+      num.textContent = String(p.number);
+
+      var pos = document.createElement('span');
+      pos.style.fontSize = '10px';
+      pos.style.padding = '2px 5px';
+      pos.style.borderRadius = '5px';
+      pos.style.background = '#1e293b';
+      pos.style.color = '#cbd5e1';
+      pos.textContent = p.pos;
+
+      var name = document.createElement('span');
+      name.textContent = p.name;
+
+      var right = document.createElement('span');
+      right.style.fontSize = '11px';
+      right.style.color = '#fcd34d';
+      right.textContent = '配置';
+
+      left.appendChild(num);
+      left.appendChild(pos);
+      left.appendChild(name);
+      btn.appendChild(left);
+      btn.appendChild(right);
+      list.appendChild(btn);
+    });
+  }
+
+  function renderAll() {
+    renderButtons();
+    renderPitch();
+    renderTweetPreview();
+  }
+
+  var toastTimer = null;
+  function showToast(msg) {
+    var el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove('show'); }, 2200);
+  }
+
+  function copyText(text, msg) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        showToast(msg);
+      }).catch(function () {
+        showToast('コピーに失敗しました');
+      });
+    } else {
+      showToast('コピーに失敗しました');
     }
   }
-}
 
-async function copyLineupText() {
-  saveState();
-  const title = (document.getElementById('match-title')?.value || '予想スタメン').trim();
-  const memo = (document.getElementById('match-memo')?.value || '').trim();
-  const coords = FORMATIONS[state.formation] || FORMATIONS['4-4-2'];
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    var action = btn.getAttribute('data-action');
+    if (!action) return;
 
-  const xiLines = state.startingXI.map((pid, idx) => {
-    const role = coords[idx]?.role || '';
-    const p = state.players.find(item => item.id === pid);
-    return p ? `${role}: #${p.number} ${p.name}` : `${role}: 未定`;
+    if (action === 'reset') {
+      state.opponent = '清水エスパルス';
+      state.matchLabel = '第15節 予想スタメン';
+      state.formation = '4-2-3-1';
+      state.comment = '勝利の立役者になってほしい！🦌🔥';
+      state.slots = Array(11).fill(null);
+      syncInputs();
+      saveState();
+      renderAll();
+      showToast('リセットしました');
+    } else if (action === 'formation') {
+      state.formation = btn.getAttribute('data-val');
+      saveState();
+      renderAll();
+    } else if (action === 'clear-slots') {
+      state.slots = Array(11).fill(null);
+      saveState();
+      renderPitch();
+      showToast('全枠をクリアしました');
+    } else if (action === 'open-slot') {
+      var idx = parseInt(btn.getAttribute('data-slot-idx'), 10);
+      state.activeSlotIdx = idx;
+      var def = (FORMATIONS[state.formation] || FORMATIONS['4-2-3-1'])[idx];
+      document.getElementById('modal-title').textContent = '「' + def.label + '」の選手を選択';
+      document.getElementById('player-search').value = '';
+      renderPlayerList();
+      document.getElementById('player-modal').classList.add('open');
+    } else if (action === 'close-modal') {
+      document.getElementById('player-modal').classList.remove('open');
+      state.activeSlotIdx = null;
+    } else if (action === 'pick-player') {
+      if (state.activeSlotIdx === null) return;
+      var num = parseInt(btn.getAttribute('data-number'), 10);
+      var found = PLAYERS.find(function (p) { return p.number === num; });
+      if (found) {
+        state.slots[state.activeSlotIdx] = { number: found.number, name: found.name, pos: found.pos };
+        saveState();
+        renderPitch();
+        showToast('#' + found.number + ' ' + found.name + ' をセットしました');
+      }
+      document.getElementById('player-modal').classList.remove('open');
+      state.activeSlotIdx = null;
+    } else if (action === 'copy-tweet') {
+      copyText(buildTweetText(), 'URL付きのX投稿文をコピーしました！');
+    }
   });
 
-  const benchNames = state.bench
-    .map(pid => state.players.find(item => item.id === pid))
-    .filter(Boolean)
-    .map(p => `#${p.number} ${getShortName(p)}`);
+  document.addEventListener('input', function (e) {
+    var el = e.target;
+    if (el.id === 'opp-input') {
+      state.opponent = el.value.trim();
+    } else if (el.id === 'match-label-input') {
+      state.matchLabel = el.value.trim();
+    } else if (el.id === 'comment-input') {
+      state.comment = el.value;
+    } else if (el.id === 'player-search') {
+      renderPlayerList();
+      return;
+    }
+    saveState();
+    renderTweetPreview();
+  });
 
-  const text = [
-    `【${title}】(${state.formation})`,
-    ...xiLines,
-    benchNames.length ? `\nSUB: ${benchNames.join(' / ')}` : '',
-    memo ? `\n${memo}` : '',
-    `Created by @syou0120`
-  ].filter(Boolean).join('\n');
-
-  try {
-    await navigator.clipboard.writeText(text);
-    showToast('スタメンテキストをコピーしました');
-  } catch (e) {
-    showToast('コピーに失敗しました');
-  }
-}
-
-let toastTimer = null;
-function showToast(msg) {
-  const el = document.getElementById('toast');
-  if (!el) return;
-  el.textContent = msg;
-  el.classList.remove('hidden');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => {
-    el.classList.add('hidden');
-  }, 2400);
-}
-
-loadState();
-document.getElementById('match-title').value = state.matchTitle;
-document.getElementById('match-memo').value = state.matchMemo;
-renderAll();
+  loadState();
+  syncInputs();
+  renderAll();
+})();
 </script>
 </body>
 </html>
