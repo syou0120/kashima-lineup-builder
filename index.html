@@ -770,8 +770,9 @@ function renderOpponentUI() {
       j1List.classList.remove('hidden');
       j1List.innerHTML = J1_OTHER_CLUBS.map(club => {
         const active = opp === club;
+        const encoded = encodeURIComponent(club);
         return `
-          <button type="button" onclick="setOpponent(${JSON.stringify(club)}, true)"
+          <button type="button" data-club-encoded="${encoded}" onclick="selectJ1Club(this)"
             class="px-3 py-1.5 rounded-lg text-xs font-bold border text-left transition ${
               active
                 ? 'bg-red-700 text-white border-amber-400 shadow'
@@ -783,6 +784,13 @@ function renderOpponentUI() {
       }).join('');
     }
   }
+}
+
+function selectJ1Club(btn) {
+  const encoded = btn?.dataset?.clubEncoded;
+  if (!encoded) return;
+  const club = decodeURIComponent(encoded);
+  setOpponent(club, true);
 }
 
 function renderHistory() {
